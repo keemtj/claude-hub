@@ -136,7 +136,7 @@ const CODEX_REQUESTS = [
   '{"jsonrpc":"2.0","id":2,"method":"account/read","params":{}}',
 ]
 
-type CodexAccount = { email?: string; planType?: string }
+type CodexAccount = { type?: string; email?: string; planType?: string }
 
 async function codexAccount(
   $: EngineInterface,
@@ -303,13 +303,16 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
     }
     case 'codex': {
       const where = await detectHost($, cwd)
-      // How it signs in, with the plan: "ChatGPT pro".
-      const plan = (account: CodexAccount) => (account.planType ? `ChatGPT ${account.planType}` : 'ChatGPT')
+      // Three lines for every agent: how it signs in, the plan (what it bills
+      // under, related facts joined), where the login lives.
+      const how = (account: CodexAccount) => (account.type === 'apiKey' ? 'API 키' : '구독')
+      const plan = (account: CodexAccount) =>
+        account.type === 'apiKey' ? undefined : ['ChatGPT', account.planType].filter(Boolean).join(' · ')
+      const lines = (account: CodexAccount, source: string) =>
+        [how(account), plan(account), source].filter((line): line is string => Boolean(line))
       // In Orca the active account is the one Orca runs Codex with; elsewhere
       // it is what codex from this session uses (CODEX_HOME, else ~/.codex).
       const accounts: AccountLine[] = []
-      // A custom CODEX_HOME is worth naming; the usual ~/.codex is just the default login.
-      const homeLines = (base: string) => (where.codexHome ? [base, where.codexHome] : [base])
       const mine = await codexAccount($, cwd, where.codexHome)
       if (where.orcaData) {
         const active = await orcaActiveAccount($, where.orcaData)
@@ -322,7 +325,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
           accounts.push({
             value: who.email,
             state: id === active ? 'active' : 'inactive',
-            details: [plan(who), 'Orca 관리'],
+            details: lines(who, 'Orca 관리'),
           })
         }
         if (mine?.email) {
@@ -330,7 +333,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
             value: mine.email,
             state: active === 'default' ? 'active' : 'inactive',
             // Orca offers the system default in its own account picker too.
-            details: [plan(mine), ...homeLines('시스템 기본'), 'Orca 관리'],
+            details: lines(mine, ['시스템 기본', 'Orca 관리', where.codexHome].filter(Boolean).join(' · ')),
           })
         }
         accounts.sort((a, b) => Number(b.state === 'active') - Number(a.state === 'active'))
@@ -339,7 +342,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
       if (mine?.email) {
         return {
           account: mine.email,
-          accounts: [{ value: mine.email, state: 'active', details: [plan(mine), ...homeLines('기본 로그인')] }],
+          accounts: [{ value: mine.email, state: 'active', details: lines(mine, where.codexHome ?? '기본 로그인') }],
         }
       }
       const status = firstLine(await run($, ['codex', 'login', 'status'], cwd))
@@ -369,8 +372,8 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
         const folder = pick('configDirectory')
         const isDefault = !folder || /\/\.claude\/?$/.test(folder)
         const details = [
-          [how, pick('subscriptionType')].filter(Boolean).join(' ') || undefined,
-          pick('orgName'),
+          how,
+          [pick('orgName'), pick('subscriptionType')].filter(Boolean).join(' · ') || undefined,
           isDefault ? '시스템 기본' : `설정 폴더 ${folder}`,
         ].filter((line): line is string => Boolean(line))
         if (email) return { account: email, accounts: [{ value: email, state: 'active', details }] }
