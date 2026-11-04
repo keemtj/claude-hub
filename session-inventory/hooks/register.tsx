@@ -186,7 +186,8 @@ export const register: Register = on => {
   })
 
   // With one pane open the engine draws no title row, so the body's first row
-  // sits at the very top, under Orca's window buttons: start one row down.
+  // sits at the very top, under Orca's window buttons: start one row down,
+  // and one column in from the engine's divider.
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const current: Inventory = await read($, inventory)
@@ -254,7 +255,7 @@ export const register: Register = on => {
     })
 
     return (
-      <Box flexDirection="column" marginTop={1}>
+      <Box flexDirection="column" marginTop={1} marginLeft={1}>
         <Box flexDirection="row" gap={1}>
           {tabButton('plugins', '플러그인', current.plugins.length)}
           {tabButton('skills', '스킬', current.skills.length)}
@@ -268,19 +269,19 @@ export const register: Register = on => {
         )}
 
         {active === 'plugins' && (
-          <Box flexDirection="column" marginTop={1}>
+          <Box flexDirection="column" marginTop={1} marginLeft={1}>
             <Text dimColor>켜고 끄면 모든 세션에 적용됩니다. 지금 세션은 /reload-plugins 후 반영됩니다.</Text>
             {current.message && <Text color="cyan">{current.message}</Text>}
-            <Box flexDirection="column" marginTop={1}>{pluginRows}</Box>
+            <Box flexDirection="column" marginTop={1} marginLeft={1}>{pluginRows}</Box>
           </Box>
         )}
 
         {active === 'skills' && (
-          <Box flexDirection="column" marginTop={1}>
+          <Box flexDirection="column" marginTop={1} marginLeft={1}>
             <Text dimColor>개인 스킬을 이 세션에서만 끄고 켭니다. 외부 설치 스킬은 보기만 합니다.</Text>
-            <Box flexDirection="column" marginTop={1}>{skillRows}</Box>
+            <Box flexDirection="column" marginTop={1} marginLeft={1}>{skillRows}</Box>
             {current.pluginSkills.length > 0 && (
-              <Box flexDirection="column" marginTop={1}>
+              <Box flexDirection="column" marginTop={1} marginLeft={1}>
                 <Text bold>플러그인 스킬 (플러그인 탭에서 켜고 끔)</Text>
                 <Text dimColor>
                   {current.pluginSkills.map(group => `${group.plugin} ${group.count}`).join(' · ')}
@@ -291,9 +292,9 @@ export const register: Register = on => {
         )}
 
         {active === 'mcp' && (
-          <Box flexDirection="column" marginTop={1}>
+          <Box flexDirection="column" marginTop={1} marginLeft={1}>
             <Text dimColor>이 세션에서만 서버의 도구 호출을 막습니다. 상태는 `claude mcp list` 기준입니다.</Text>
-            <Box flexDirection="column" marginTop={1}>{mcpRows}</Box>
+            <Box flexDirection="column" marginTop={1} marginLeft={1}>{mcpRows}</Box>
           </Box>
         )}
       </Box>

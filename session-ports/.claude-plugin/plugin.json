@@ -1,6 +1,6 @@
 {
   "name": "session-ports",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "이 세션이 띄운 프로세스가 열어 둔 포트를 옆 패널에 보여 준다 (/ports)",
   "author": {
     "name": "keemtj"

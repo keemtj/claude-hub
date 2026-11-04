@@ -329,7 +329,8 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // With one pane open the engine draws no title row, so the body's first row
-  // sits at the very top, under Orca's window buttons: start one row down.
+  // sits at the very top, under Orca's window buttons: start one row down,
+  // and one column in from the engine's divider.
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const current: AccountsView = await read($, view)
@@ -342,7 +343,7 @@ export const register: Register = on => {
     })).filter(group => group.rows.length > 0)
 
     return (
-      <Box flexDirection="column" marginTop={1}>
+      <Box flexDirection="column" marginTop={1} marginLeft={1}>
         <Box flexDirection="row" gap={1}>
           <Text bold color="claude">이 세션의 계정</Text>
           <Box flexGrow={1} />
@@ -358,7 +359,7 @@ export const register: Register = on => {
           <Text dimColor>{current.isChecking ? '세션 기록을 읽는 중입니다.' : '아직 찾은 서비스가 없습니다.'}</Text>
         )}
         {groups.map(group => (
-          <Box flexDirection="column" marginTop={1}>
+          <Box flexDirection="column" marginTop={1} marginLeft={1}>
             <Text bold color="magenta">{group.category}</Text>
             {group.rows.map(row => (
               <Box flexDirection="column">
