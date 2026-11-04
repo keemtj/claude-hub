@@ -155,7 +155,7 @@ export const register: Register = on => {
       await $.ui.close({ id: PANE })
       return { text: '인벤토리 패널을 닫았습니다.' }
     }
-    const opened = await $.ui.open({ id: PANE, title: TITLE })
+    const opened = await $.ui.open({ id: PANE, title: TITLE, backgroundColor: "transparent" })
     void reload($, { withMcp: (await read($, tab)) === 'mcp' })
     return {
       text: opened.isPlaced ? '인벤토리 패널을 열었습니다.' : '패널을 놓을 자리가 없습니다. 터미널을 넓혀 주세요.',

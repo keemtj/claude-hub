@@ -145,7 +145,7 @@ export const register: Register = on => {
       await syncTimer($)
       return { text: '포트 패널을 닫았습니다.' }
     }
-    const opened = await $.ui.open({ id: PANE, title: TITLE })
+    const opened = await $.ui.open({ id: PANE, title: TITLE, backgroundColor: "transparent" })
     await refresh($)
     await syncTimer($)
     return {

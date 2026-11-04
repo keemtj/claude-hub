@@ -305,7 +305,7 @@ export const register: Register = on => {
       await $.ui.close({ id: PANE })
       return { text: '계정 패널을 닫았습니다.' }
     }
-    const opened = await $.ui.open({ id: PANE, title: TITLE })
+    const opened = await $.ui.open({ id: PANE, title: TITLE, backgroundColor: "transparent" })
     void refresh($)
     return {
       text: opened.isPlaced ? '계정 패널을 열었습니다. 계정을 확인하는 중입니다.' : '패널을 놓을 자리가 없습니다. 터미널을 넓혀 주세요.',
