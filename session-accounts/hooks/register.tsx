@@ -326,7 +326,8 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
       // In Orca the active account is the one Orca runs Codex with; elsewhere
       // it is what codex from this session uses (CODEX_HOME, else ~/.codex).
       const accounts: AccountLine[] = []
-      const homeLabel = where.codexHome ?? '~/.codex'
+      // A custom CODEX_HOME is worth naming; the usual ~/.codex is just the default login.
+      const homeLabel = (base: string) => (where.codexHome ? `${base} · ${where.codexHome}` : base)
       const mine = label(await codexAccount($, cwd, where.codexHome))
       if (where.orcaData) {
         const active = await orcaActiveAccount($, where.orcaData)
@@ -347,14 +348,14 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
           accounts.push({
             value: mine,
             state: active === 'default' ? 'active' : 'inactive',
-            where: `기본 ${homeLabel}`,
+            where: homeLabel('시스템 기본'),
           })
         }
         accounts.sort((a, b) => Number(b.state === 'active') - Number(a.state === 'active'))
         return accounts.length ? { account: accounts[0]?.value, accounts } : { note: '로그인 안 됨' }
       }
       if (mine) {
-        return { account: mine, accounts: [{ value: mine, state: 'active', where: `기본 ${homeLabel}` }] }
+        return { account: mine, accounts: [{ value: mine, state: 'active', where: homeLabel('기본 로그인') }] }
       }
       const status = firstLine(await run($, ['codex', 'login', 'status'], cwd))
       if (!status) return { note: 'codex 명령 없음' }
