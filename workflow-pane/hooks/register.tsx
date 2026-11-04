@@ -351,7 +351,7 @@ export const register: Register = on => {
       return { text: '워크플로 패널을 닫았습니다.' }
     }
     await syncFromFiles($).catch(() => {})
-    const opened = await $.ui.open({ id: PANE, title: TITLE })
+    const opened = await $.ui.open({ id: PANE, title: TITLE, backgroundColor: "transparent" })
     await syncTicking($)
     return {
       text: opened.isPlaced
@@ -372,7 +372,7 @@ export const register: Register = on => {
       agents: [],
     }
     await update($, runs, list => [...list, run].slice(-5))
-    void $.ui.open({ id: PANE, title: TITLE })
+    void $.ui.open({ id: PANE, title: TITLE, backgroundColor: "transparent" })
     await syncTicking($)
     return next(e)
   }).catch(($, e, next) => next(e))
