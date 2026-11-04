@@ -7,8 +7,9 @@ export type AccountState = 'active' | 'inactive'
 export type AccountLine = {
   value: string
   state: AccountState
-  // Where the login lives and who uses it, in words
-  where?: string
+  // One fact per line, in this order: how it signs in (and plan), the
+  // organization, where the login lives
+  details?: string[]
 }
 
 export type ServiceRow = {

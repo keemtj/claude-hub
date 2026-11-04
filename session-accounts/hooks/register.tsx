@@ -12,7 +12,7 @@ const TITLE = 'Accounts'
 const view = atom(
   { plugin: 'session-accounts', key: 'view' } as const,
   { rows: [], isChecking: false },
-  { shape: 'view-4' },
+  { shape: 'view-5' },
 )
 
 // Tool calls seen live since the last full scan of the transcript.
@@ -251,7 +251,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
         .map(([scope, email], i) => ({
           value: i === rows.length - 1 && name ? `${name} <${email}>` : email,
           state: (i === rows.length - 1 ? 'active' : 'inactive') as AccountLine['state'],
-          where: `${SCOPE[scope] ?? scope} 설정${i === rows.length - 1 ? '' : ' · 덮어써짐'}`,
+          details: i === rows.length - 1 ? [`${SCOPE[scope] ?? scope} 설정`] : [`${SCOPE[scope] ?? scope} 설정`, '덮어써짐'],
         }))
         .reverse()
       return {
@@ -273,7 +273,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
         const login = line.match(/Logged in to (\S+) account (\S+)/)
         if (login) {
           const server = login[1] ?? hostName
-          pending = { value: login[2] ?? '', state: 'inactive', where: server === 'github.com' ? undefined : server }
+          pending = { value: login[2] ?? '', state: 'inactive', details: server === 'github.com' ? undefined : [server] }
           accounts.push(pending)
         }
         if (pending && /Active account:\s*true/.test(line)) pending.state = 'active'
@@ -303,41 +303,44 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
     }
     case 'codex': {
       const where = await detectHost($, cwd)
-      const label = (account: CodexAccount | undefined) =>
-        account?.email ? `${account.email}${account.planType ? ` (${account.planType})` : ''}` : undefined
+      // How it signs in, with the plan: "ChatGPT pro".
+      const plan = (account: CodexAccount) => (account.planType ? `ChatGPT ${account.planType}` : 'ChatGPT')
       // In Orca the active account is the one Orca runs Codex with; elsewhere
       // it is what codex from this session uses (CODEX_HOME, else ~/.codex).
       const accounts: AccountLine[] = []
       // A custom CODEX_HOME is worth naming; the usual ~/.codex is just the default login.
-      const homeLabel = (base: string) => (where.codexHome ? `${base} · ${where.codexHome}` : base)
-      const mine = label(await codexAccount($, cwd, where.codexHome))
+      const homeLines = (base: string) => (where.codexHome ? [base, where.codexHome] : [base])
+      const mine = await codexAccount($, cwd, where.codexHome)
       if (where.orcaData) {
         const active = await orcaActiveAccount($, where.orcaData)
         const ids = (await $.fs.list(`${where.orcaData}/codex-accounts`).catch(() => []))
           .filter(entry => entry.kind === 'dir')
           .map(entry => entry.name)
         for (const id of ids) {
-          const who = label(await codexAccount($, cwd, `${where.orcaData}/codex-accounts/${id}/home`))
-          if (!who) continue
+          const who = await codexAccount($, cwd, `${where.orcaData}/codex-accounts/${id}/home`)
+          if (!who?.email) continue
           accounts.push({
-            value: who,
+            value: who.email,
             state: id === active ? 'active' : 'inactive',
-            where: 'Orca 관리',
+            details: [plan(who), 'Orca 관리'],
           })
         }
-        if (mine) {
+        if (mine?.email) {
           accounts.push({
-            value: mine,
+            value: mine.email,
             state: active === 'default' ? 'active' : 'inactive',
             // Orca offers the system default in its own account picker too.
-            where: homeLabel('시스템 기본 · Orca 관리'),
+            details: [plan(mine), ...homeLines('시스템 기본'), 'Orca 관리'],
           })
         }
         accounts.sort((a, b) => Number(b.state === 'active') - Number(a.state === 'active'))
         return accounts.length ? { account: accounts[0]?.value, accounts } : { note: '로그인 안 됨' }
       }
-      if (mine) {
-        return { account: mine, accounts: [{ value: mine, state: 'active', where: homeLabel('기본 로그인') }] }
+      if (mine?.email) {
+        return {
+          account: mine.email,
+          accounts: [{ value: mine.email, state: 'active', details: [plan(mine), ...homeLines('기본 로그인')] }],
+        }
       }
       const status = firstLine(await run($, ['codex', 'login', 'status'], cwd))
       if (!status) return { note: 'codex 명령 없음' }
@@ -362,8 +365,15 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
               : method
                 ? 'API 키'
                 : undefined
-        const where = [how, pick('orgName'), pick('subscriptionType')].filter(Boolean).join(' · ') || undefined
-        if (email) return { account: email, accounts: [{ value: email, state: 'active', where }] }
+        // The login lives in a config folder: ~/.claude is the default one.
+        const folder = pick('configDirectory')
+        const isDefault = !folder || /\/\.claude\/?$/.test(folder)
+        const details = [
+          [how, pick('subscriptionType')].filter(Boolean).join(' ') || undefined,
+          pick('orgName'),
+          isDefault ? '시스템 기본' : `설정 폴더 ${folder}`,
+        ].filter((line): line is string => Boolean(line))
+        if (email) return { account: email, accounts: [{ value: email, state: 'active', details }] }
         if (status.loggedIn === false) return { note: '로그인 안 됨' }
       } catch {}
       const who = await $.session.identity().catch(() => undefined)
@@ -381,13 +391,13 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
 
 // ---- Putting it together ----------------------------------------------------
 
-// Words for services that hold one login.
-const SINGLE_WHERE: Record<string, string> = {
-  vercel: 'vercel CLI',
-  expo: 'eas CLI',
-  aws: 'AWS 자격 증명',
-  npm: '~/.npmrc',
-  gcloud: 'gcloud 구성',
+// Where the login lives, for services that hold one.
+const SINGLE_DETAILS: Record<string, string[]> = {
+  vercel: ['vercel CLI'],
+  expo: ['eas CLI'],
+  aws: ['AWS 자격 증명'],
+  npm: ['~/.npmrc'],
+  gcloud: ['gcloud 구성'],
 }
 
 async function refresh($: EngineInterface) {
@@ -420,7 +430,7 @@ async function refresh($: EngineInterface) {
         const usage = used.get(id)
         const hint = hints.filter(h => h.id === id)
         const reasons = [...(usage ? usageText(usage) : []), ...hint.map(h => h.reason)]
-        const detail = [check.detail, ...hint.map(h => h.detail)].filter(Boolean).join(' · ') || undefined
+        const detail = [check.detail, ...hint.map(h => h.detail)].filter(Boolean).join('\n') || undefined
         const weight = usage ? usage.commands + usage.mcp + usage.artifacts : 0
         const row: ServiceRow & { weight: number } = {
           id,
@@ -432,7 +442,7 @@ async function refresh($: EngineInterface) {
           note: check.note,
           accounts:
             check.accounts ??
-            (check.account ? [{ value: check.account, state: 'active' as const, where: SINGLE_WHERE[id] }] : []),
+            (check.account ? [{ value: check.account, state: 'active' as const, details: SINGLE_DETAILS[id] }] : []),
           weight,
         }
         return row
@@ -523,9 +533,8 @@ export const register: Register = on => {
           {unknown > 0 && <Text backgroundColor="gray" color="black"> 확인 불가 {unknown} </Text>}
           {current.isChecking && <Text backgroundColor="yellow" color="black"> 확인 중… </Text>}
         </Box>
-        <Text dimColor>
-          활성 = 지금 선택됨 · 비활성 = 로그인만 됨
-        </Text>
+        <Text dimColor>활성: 지금 선택된 계정</Text>
+        <Text dimColor>비활성: 로그인만 된 계정</Text>
         {current.rows.length === 0 && (
           <Text dimColor>{current.isChecking ? '세션 기록을 읽는 중입니다.' : '아직 찾은 서비스가 없습니다.'}</Text>
         )}
@@ -554,13 +563,13 @@ export const register: Register = on => {
                       <Text color={line.state === 'active' ? 'cyan' : undefined} dimColor={line.state === 'inactive'}>
                         {line.value}
                       </Text>
-                      {line.where && <Text dimColor>{line.where}</Text>}
+                      {(line.details ?? []).map(fact => <Text dimColor>{fact}</Text>)}
                     </Box>
                   </Box>
                 ))}
                 {row.detail && (
-                  <Box marginLeft={2 + LABEL_WIDTH + 1}>
-                    <Text dimColor>{row.detail}</Text>
+                  <Box flexDirection="column" marginLeft={2 + LABEL_WIDTH + 1}>
+                    {row.detail.split('\n').map(fact => <Text dimColor>{fact}</Text>)}
                   </Box>
                 )}
               </Box>
