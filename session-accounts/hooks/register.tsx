@@ -119,6 +119,40 @@ const firstLine = (text: string | undefined) =>
 // A remote URL can carry a token: keep only the host and path.
 const cleanRemote = (url: string) => url.replace(/\/\/[^@/]+@/, '//').replace(/\.git$/, '')
 
+// Codex says who is signed in only through its app-server protocol
+// (account/read). The server stops when its input closes, so the input stays
+// open until the answer arrives and the loop ends, which ends the process.
+const CODEX_REQUESTS = [
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"clientInfo":{"name":"session-accounts","version":"0.4.0"}}}',
+  '{"jsonrpc":"2.0","method":"initialized"}',
+  '{"jsonrpc":"2.0","id":2,"method":"account/read","params":{}}',
+]
+
+type CodexAccount = { email?: string; planType?: string }
+
+async function codexAccount($: EngineInterface, cwd: string): Promise<CodexAccount | undefined> {
+  const script = `(printf '%s\\n' ${CODEX_REQUESTS.map(r => `'${r}'`).join(' ')}; sleep 15) | codex app-server 2>/dev/null`
+  let buffered = ''
+  const started = Date.now()
+  try {
+    for await (const piece of $.process.spawn({ argv: ['sh', '-c', script], cwd })) {
+      if (!('text' in piece)) break
+      if (piece.stream !== 'stdout') continue
+      buffered += piece.text
+      const lines = buffered.split('\n')
+      buffered = lines.pop() ?? ''
+      for (const line of lines) {
+        try {
+          const message = JSON.parse(line) as { id?: number; result?: { account?: CodexAccount | null } }
+          if (message.id === 2) return message.result?.account ?? undefined
+        } catch {}
+      }
+      if (Date.now() - started > 15000) break
+    }
+  } catch {}
+  return undefined
+}
+
 async function checkService($: EngineInterface, id: string, cwd: string): Promise<Check> {
   switch (id) {
     case 'git': {
@@ -158,11 +192,15 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
       return who ? { account: who } : { note: 'gcloud 명령 없음' }
     }
     case 'codex': {
+      const account = await codexAccount($, cwd)
+      if (account?.email) {
+        return { account: account.email, detail: account.planType ? `ChatGPT ${account.planType}` : undefined }
+      }
       const status = firstLine(await run($, ['codex', 'login', 'status'], cwd))
       if (!status) return { note: 'codex 명령 없음' }
       if (/not logged in/i.test(status)) return { note: '로그인 안 됨' }
       const method = status.match(/using (.+)$/i)?.[1]
-      return { account: method ? `${method} 로그인` : status, detail: '이메일은 Codex CLI가 알려 주지 않음' }
+      return { account: method ? `${method} 로그인` : status }
     }
     case 'claude': {
       const text = await run($, ['claude', 'auth', 'status'], cwd)
@@ -248,12 +286,6 @@ async function isPaneShown($: EngineInterface) {
   return panes.some(pane => pane.id === PANE && pane.isPlaced)
 }
 
-function ago(at: number | undefined) {
-  if (!at) return '확인 전'
-  const s = Math.max(0, Math.round((Date.now() - at) / 1000))
-  return s < 60 ? `${s}초 전 확인` : `${Math.floor(s / 60)}분 전 확인`
-}
-
 export const register: Register = on => {
   live = new Map()
   transcriptPath = undefined
@@ -318,9 +350,7 @@ export const register: Register = on => {
         <Box flexDirection="row" gap={1} marginTop={1}>
           {connected > 0 && <Text backgroundColor="green" color="black"> 연결 {connected} </Text>}
           {unknown > 0 && <Text backgroundColor="gray" color="black"> 확인 불가 {unknown} </Text>}
-          <Text backgroundColor={current.isChecking ? 'yellow' : 'blackBright'} color="black">
-            {' '}{current.isChecking ? '확인 중…' : ago(current.checkedAt)}{' '}
-          </Text>
+          {current.isChecking && <Text backgroundColor="yellow" color="black"> 확인 중… </Text>}
         </Box>
         {current.rows.length === 0 && (
           <Text dimColor>{current.isChecking ? '세션 기록을 읽는 중입니다.' : '아직 찾은 서비스가 없습니다.'}</Text>
