@@ -21,14 +21,12 @@ const STATUS_LOOK: Record<AgentStatus, { mark: string; color: string }> = {
 }
 const STATUS_RANK: Record<AgentStatus, number> = { starting: 0, running: 1, done: 2, failed: 2 }
 
-// A small orange critter: walks while agents run, cheers when all are done.
-const WALK = [
-  [' ▗▄▄▄▖ ', ' ▐▘▘▝▌ ', ' ▝▖ ▗▘ '],
-  [' ▗▄▄▄▖ ', ' ▐▘▘▝▌ ', ' ▗▘ ▝▖ '],
-]
-const CHEER = ['▝▗▄▄▄▖▘', ' ▐▀▀▀▌ ', ' ▝▘ ▝▘ ']
-const SAD = [' ▗▄▄▄▖ ', ' ▐▗ ▖▌ ', ' ▝▘ ▝▘ ']
-const IDLE = [' ▗▄▄▄▖ ', ' ▐▬ ▬▌ ', ' ▝▘ ▝▘ ']
+// Clawd, as on Claude Code's welcome screen: walks while agents run, raises
+// its arms when all are done, squints when something failed.
+const IDLE = [' ▐▛███▜▌ ', '▝▜█████▛▘', '  ▘▘ ▝▝  ']
+const WALK = [IDLE, [' ▐▛███▜▌ ', '▝▜█████▛▘', '   ▘▘ ▝▝ ']]
+const CHEER = ['▗▐▛███▜▌▖', ' ▜█████▛ ', '  ▘▘ ▝▝  ']
+const SAD = [' ▐▙███▟▌ ', '▝▜█████▛▘', '  ▘▘ ▝▝  ']
 
 // Run files: read every SYNC_EVERY ticks while something runs.
 const TICK_MS = 500
