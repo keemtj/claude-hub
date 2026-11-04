@@ -280,7 +280,8 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'workflow-pane',
-      description: '워크플로 진행 상황 패널을 연다',
+      description: '워크플로 진행 상황 패널을 연다 (close: 닫기)',
+      argumentHint: '[close]',
     })
     const started = await next(e)
     // Fill in runs that began before this mod loaded.
@@ -288,7 +289,11 @@ export const register: Register = on => {
     return started
   })
 
-  on('command.run', { command: 'workflow-pane' }, async $ => {
+  on('command.run', { command: 'workflow-pane' }, async ($, e) => {
+    if (e.args.trim() === 'close') {
+      await $.ui.close({ id: PANE })
+      return { text: '워크플로 패널을 닫았습니다.' }
+    }
     await syncFromFiles($).catch(() => {})
     const opened = await $.ui.open({ id: PANE, title: TITLE })
     return {
@@ -378,7 +383,8 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Text, Button } = $.ui.resolve(e)
+    const close = () => void $.ui.close({ id: PANE })
     const list = await read($, runs)
     const tick = await read($, frame)
     const now = Date.now()
@@ -389,6 +395,7 @@ export const register: Register = on => {
         <Box flexDirection="column">
           {IDLE.map(line => <Text color="claude">{line}</Text>)}
           <Text dimColor>아직 실행한 워크플로가 없습니다.</Text>
+          <Button key="close" role="dismiss" onPress={close}>닫기</Button>
         </Box>
       )
     }
@@ -442,6 +449,8 @@ export const register: Register = on => {
               ✔ {finished} · ✘ {failed} · {elapsed(run.startedAt, run.endedAt ?? now)}
             </Text>
           </Box>
+          <Box flexGrow={1} />
+          <Button key="close" role="dismiss" onPress={close}>닫기</Button>
         </Box>
         {run.phases.length > 0 && (
           <Box flexDirection="row" flexWrap="wrap" gap={1} marginTop={1}>
