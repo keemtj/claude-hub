@@ -538,7 +538,7 @@ export const register: Register = on => {
             })}
           </Box>
         )}
-        <Box flexDirection="column" marginTop={1} marginLeft={1}>
+        <Box flexDirection="column" marginTop={1}>
           {agents.length === 0 && <Text dimColor>에이전트를 기다리는 중</Text>}
           {groups.map(group =>
             fits(group.agents.length + 1) ? (

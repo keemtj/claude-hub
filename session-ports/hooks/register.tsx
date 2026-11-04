@@ -175,7 +175,7 @@ export const register: Register = on => {
     const toggleAll = () => void update($, view, v => ({ ...v, isShowingAll: !v.isShowingAll }))
 
     const rowOf = (row: PortRow, isDim: boolean) => (
-      <Box flexDirection="column" marginTop={1} marginLeft={1}>
+      <Box flexDirection="column" marginTop={1}>
         <Text>
           {row.ports.map((port, i) => {
             const url = urlFor(row, port)

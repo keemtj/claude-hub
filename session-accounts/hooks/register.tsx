@@ -359,7 +359,7 @@ export const register: Register = on => {
           <Text dimColor>{current.isChecking ? '세션 기록을 읽는 중입니다.' : '아직 찾은 서비스가 없습니다.'}</Text>
         )}
         {groups.map(group => (
-          <Box flexDirection="column" marginTop={1} marginLeft={1}>
+          <Box flexDirection="column" marginTop={1}>
             <Text bold color="magenta">{group.category}</Text>
             {group.rows.map(row => (
               <Box flexDirection="column">
