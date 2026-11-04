@@ -242,10 +242,10 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
       const remote = firstLine(await run($, ['git', 'remote', 'get-url', 'origin'], cwd))
       const isRemote = remote !== undefined && /^(https?:\/\/|ssh:\/\/|git@)/.test(remote)
       const SCOPE: Record<string, string> = {
-        local: '이 저장소 설정 (.git/config)',
-        global: '전역 설정 (~/.gitconfig)',
-        system: '시스템 설정',
-        worktree: '이 워크트리 설정',
+        local: '저장소',
+        global: '전역',
+        system: '시스템',
+        worktree: '워크트리',
       }
       const rows = text
         .split('\n')
@@ -255,13 +255,13 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
         .map(([scope, email], i) => ({
           value: i === rows.length - 1 && name ? `${name} <${email}>` : email,
           state: (i === rows.length - 1 ? 'active' : 'inactive') as AccountLine['state'],
-          where: `${SCOPE[scope] ?? scope}${i === rows.length - 1 ? ' · 커밋에 쓰임' : ' · 아래 설정에 덮어써짐'}`,
+          where: `${SCOPE[scope] ?? scope} 설정${i === rows.length - 1 ? '' : ' · 덮어써짐'}`,
         }))
         .reverse()
       return {
         account: accounts[0]?.value,
         accounts,
-        detail: isRemote ? `remote ${cleanRemote(remote)}` : undefined,
+        detail: isRemote ? cleanRemote(remote) : undefined,
         note: accounts.length ? undefined : '커밋 계정 미설정',
       }
     }
@@ -276,7 +276,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
         if (/^\S/.test(line)) hostName = line.trim()
         const login = line.match(/Logged in to (\S+) account (\S+)/)
         if (login) {
-          pending = { value: login[2] ?? '', state: 'inactive', where: `${login[1] ?? hostName} · gh CLI` }
+          pending = { value: login[2] ?? '', state: 'inactive', where: login[1] ?? hostName }
           accounts.push(pending)
         }
         if (pending && /Active account:\s*true/.test(line)) pending.state = 'active'
@@ -327,8 +327,8 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
             state: isLead ? 'active' : 'inactive',
             where:
               panes > 0
-                ? `Orca가 관리하는 계정 · 이 계정을 고른 Orca Codex 창 기록 ${panes}개`
-                : 'Orca가 관리하는 계정 · 등록만 됨, 고른 창 없음',
+                ? `Orca 관리 · 창 ${panes}`
+                : 'Orca 관리 · 창 없음',
           })
         }
         const fallback = label(await codexAccount($, cwd, where.codexHome))
@@ -336,7 +336,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
           accounts.push({
             value: fallback,
             state: accounts.some(a => a.state === 'active') ? 'inactive' : 'active',
-            where: `기본 로그인 (${where.codexHome ?? '~/.codex'}) · Orca 밖에서 실행한 codex가 씀${realHome > 0 ? ` · 계정을 고르지 않은 Orca 창 기록 ${realHome}개` : ''}`,
+            where: `기본 ${where.codexHome ?? '~/.codex'}${realHome > 0 ? ` · 창 ${realHome}` : ''}`,
           })
         }
         return accounts.length ? { account: accounts[0]?.value, accounts } : { note: '로그인 안 됨' }
@@ -347,7 +347,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
         return {
           account: value,
           accounts: [
-            { value, state: 'active', where: `기본 로그인 (${where.codexHome ?? '~/.codex'}) · 이 터미널의 codex가 사용` },
+            { value, state: 'active', where: `기본 ${where.codexHome ?? '~/.codex'}` },
           ],
         }
       }
@@ -384,12 +384,12 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
 
 // Words for services that hold one login.
 const SINGLE_WHERE: Record<string, string> = {
-  claude: 'Claude Code 로그인 (claude auth) · 이 세션이 사용',
-  vercel: 'vercel CLI 로그인 · 이 PC 전체',
-  expo: 'eas CLI 로그인 · 이 PC 전체',
-  aws: '현재 AWS 자격 증명 (기본 프로필 또는 AWS_PROFILE)',
-  npm: 'npm 레지스트리 로그인 (~/.npmrc)',
-  gcloud: 'gcloud 활성 구성의 계정',
+  claude: 'claude auth',
+  vercel: 'vercel CLI',
+  expo: 'eas CLI',
+  aws: 'AWS 자격 증명',
+  npm: '~/.npmrc',
+  gcloud: 'gcloud 구성',
 }
 
 async function refresh($: EngineInterface) {
@@ -526,7 +526,7 @@ export const register: Register = on => {
           {current.isChecking && <Text backgroundColor="yellow" color="black"> 확인 중… </Text>}
         </Box>
         <Text dimColor>
-          활성: 지금 선택되어 쓰이는 계정 · 비활성: 로그인은 되어 있지만 지금 선택된 계정이 아님
+          활성 = 지금 선택됨 · 비활성 = 로그인만 됨
         </Text>
         {current.rows.length === 0 && (
           <Text dimColor>{current.isChecking ? '세션 기록을 읽는 중입니다.' : '아직 찾은 서비스가 없습니다.'}</Text>
@@ -554,7 +554,7 @@ export const register: Register = on => {
                       <Text backgroundColor={STATE_LOOK[line.state].color} color="black"> {STATE_LOOK[line.state].label} </Text>
                       <Text color={line.state === 'active' ? 'cyan' : undefined} dimColor={line.state === 'inactive'}> {line.value}</Text>
                     </Text>
-                    {line.where && <Text dimColor>{'            '}{line.where}</Text>}
+                    {line.where && <Text dimColor>{'          '}{line.where}</Text>}
                   </Box>
                 ))}
                 {row.detail?.split('\n').map(text => <Text dimColor>{'   '}{text}</Text>)}
