@@ -348,7 +348,8 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
           accounts.push({
             value: mine,
             state: active === 'default' ? 'active' : 'inactive',
-            where: homeLabel('시스템 기본'),
+            // Orca offers the system default in its own account picker too.
+            where: homeLabel(picks.usesRealHome ? '시스템 기본 · Orca 관리 · 이 워크스페이스' : '시스템 기본 · Orca 관리'),
           })
         }
         accounts.sort((a, b) => Number(b.state === 'active') - Number(a.state === 'active'))
