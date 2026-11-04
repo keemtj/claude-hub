@@ -213,27 +213,9 @@ async function detectHost($: EngineInterface, cwd: string): Promise<Host> {
   return host
 }
 
-type OrcaPanes = { panes?: Record<string, { homeRoute?: string; accountId?: string | null }> }
 
 // Orca's per-pane choice holds ids only (no credentials): which account home a
 // Codex pane runs with, or the real ~/.codex.
-// The account homes the Codex panes of one Orca worktree picked. Keys read
-// `<worktree id>@@<pane hash>`; a pane that picked none runs with ~/.codex.
-async function orcaWorktreePicks($: EngineInterface, orcaData: string, worktree: string | undefined) {
-  let panes: OrcaPanes['panes'] = {}
-  try {
-    panes = (JSON.parse(await $.fs.read(`${orcaData}/codex-pane-accounts.json`)) as OrcaPanes).panes ?? {}
-  } catch {}
-  const accountIds = new Set<string>()
-  let usesRealHome = false
-  for (const [key, pane] of Object.entries(panes)) {
-    if (!worktree || key.split('@@')[0] !== worktree) continue
-    if (pane.homeRoute === 'account-home' && pane.accountId) accountIds.add(pane.accountId)
-    else usesRealHome = true
-  }
-  return { accountIds, usesRealHome }
-}
-
 // Orca's active Codex account: `owner` "managed" with the account id it runs,
 // or "system-default" for ~/.codex. The file also holds credentials, so only
 // those two fields are taken from it, and nothing of it is shown or logged.
@@ -331,7 +313,6 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
       const mine = label(await codexAccount($, cwd, where.codexHome))
       if (where.orcaData) {
         const active = await orcaActiveAccount($, where.orcaData)
-        const picks = await orcaWorktreePicks($, where.orcaData, where.orcaWorktree)
         const ids = (await $.fs.list(`${where.orcaData}/codex-accounts`).catch(() => []))
           .filter(entry => entry.kind === 'dir')
           .map(entry => entry.name)
@@ -341,7 +322,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
           accounts.push({
             value: who,
             state: id === active ? 'active' : 'inactive',
-            where: picks.accountIds.has(id) ? 'Orca 관리 · 이 워크스페이스' : 'Orca 관리',
+            where: 'Orca 관리',
           })
         }
         if (mine) {
@@ -349,7 +330,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
             value: mine,
             state: active === 'default' ? 'active' : 'inactive',
             // Orca offers the system default in its own account picker too.
-            where: homeLabel(picks.usesRealHome ? '시스템 기본 · Orca 관리 · 이 워크스페이스' : '시스템 기본 · Orca 관리'),
+            where: homeLabel('시스템 기본 · Orca 관리'),
           })
         }
         accounts.sort((a, b) => Number(b.state === 'active') - Number(a.state === 'active'))
