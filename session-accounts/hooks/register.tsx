@@ -325,10 +325,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
           accounts.push({
             value: who,
             state: isLead ? 'active' : 'inactive',
-            where:
-              panes > 0
-                ? `Orca 관리 · 창 ${panes}`
-                : 'Orca 관리 · 창 없음',
+            where: 'Orca 관리',
           })
         }
         const fallback = label(await codexAccount($, cwd, where.codexHome))
@@ -336,7 +333,7 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
           accounts.push({
             value: fallback,
             state: accounts.some(a => a.state === 'active') ? 'inactive' : 'active',
-            where: `기본 ${where.codexHome ?? '~/.codex'}${realHome > 0 ? ` · 창 ${realHome}` : ''}`,
+            where: `기본 ${where.codexHome ?? '~/.codex'}`,
           })
         }
         return accounts.length ? { account: accounts[0]?.value, accounts } : { note: '로그인 안 됨' }
