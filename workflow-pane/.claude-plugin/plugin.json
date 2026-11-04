@@ -1,6 +1,6 @@
 {
   "name": "workflow-pane",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "워크플로 진행 상황을 옆 패널에 색과 캐릭터로 보여 준다",
   "author": { "name": "keemtj" },
   "types": "./types/index.d.ts"
