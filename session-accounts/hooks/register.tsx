@@ -169,12 +169,26 @@ let host: Host | undefined
 
 async function detectHost($: EngineInterface, cwd: string): Promise<Host> {
   if (host) return host
+  // name=value lines, so an empty variable never shifts the others.
   const text = (await run(
     $,
-    ['sh', '-c', 'printf "%s\\n" "$TERM_PROGRAM" "$TMUX" "$ORCA_USER_DATA_PATH" "$CODEX_HOME" "$ZELLIJ" "$CMUX_SOCKET_PATH$CMUX_WORKSPACE_ID" "$HERDR_SESSION$HERDR_PANE"'],
+    [
+      'sh',
+      '-c',
+      'for v in TERM_PROGRAM TMUX ORCA_USER_DATA_PATH CODEX_HOME ZELLIJ CMUX_SOCKET_PATH CMUX_WORKSPACE_ID HERDR_SESSION HERDR_PANE; do eval "printf \\"%s=%s\\\\n\\" \\"$v\\" \\"\\$$v\\""; done',
+    ],
     cwd,
   )) ?? ''
-  const [term = '', tmux = '', orca = '', codexHome = '', zellij = '', cmux = '', herdr = ''] = text.split('\n')
+  const vars = new Map(
+    text.split('\n').map(line => [line.slice(0, line.indexOf('=')), line.slice(line.indexOf('=') + 1)] as const),
+  )
+  const term = vars.get('TERM_PROGRAM') ?? ''
+  const tmux = vars.get('TMUX') ?? ''
+  const orca = vars.get('ORCA_USER_DATA_PATH') ?? ''
+  const codexHome = vars.get('CODEX_HOME') ?? ''
+  const zellij = vars.get('ZELLIJ') ?? ''
+  const cmux = (vars.get('CMUX_SOCKET_PATH') ?? '') + (vars.get('CMUX_WORKSPACE_ID') ?? '')
+  const herdr = (vars.get('HERDR_SESSION') ?? '') + (vars.get('HERDR_PANE') ?? '')
   const name = orca || term === 'Orca'
     ? 'Orca'
     : cmux || /cmux/i.test(term)
