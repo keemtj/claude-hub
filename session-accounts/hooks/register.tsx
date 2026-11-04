@@ -130,12 +130,17 @@ const CODEX_REQUESTS = [
 
 type CodexAccount = { email?: string; planType?: string }
 
-async function codexAccount($: EngineInterface, cwd: string): Promise<CodexAccount | undefined> {
+async function codexAccount(
+  $: EngineInterface,
+  cwd: string,
+  codexHome?: string,
+): Promise<CodexAccount | undefined> {
   const script = `(printf '%s\\n' ${CODEX_REQUESTS.map(r => `'${r}'`).join(' ')}; sleep 15) | codex app-server 2>/dev/null`
   let buffered = ''
   const started = Date.now()
   try {
-    for await (const piece of $.process.spawn({ argv: ['sh', '-c', script], cwd })) {
+    const env = codexHome ? { CODEX_HOME: codexHome } : undefined
+    for await (const piece of $.process.spawn({ argv: ['sh', '-c', script], cwd, env })) {
       if (!('text' in piece)) break
       if (piece.stream !== 'stdout') continue
       buffered += piece.text
@@ -151,6 +156,62 @@ async function codexAccount($: EngineInterface, cwd: string): Promise<CodexAccou
     }
   } catch {}
   return undefined
+}
+
+// ---- Where this Claude runs -----------------------------------------------------
+// The terminal or multiplexer around the session decides where Codex keeps its
+// login. Orca manages accounts of its own (one Codex home per account, chosen per
+// pane); everything else uses CODEX_HOME, or ~/.codex.
+
+type Host = { name: string; orcaData?: string; codexHome?: string }
+
+let host: Host | undefined
+
+async function detectHost($: EngineInterface, cwd: string): Promise<Host> {
+  if (host) return host
+  const text = (await run(
+    $,
+    ['sh', '-c', 'printf "%s\\n" "$TERM_PROGRAM" "$TMUX" "$ORCA_USER_DATA_PATH" "$CODEX_HOME" "$ZELLIJ" "$CMUX_SOCKET_PATH$CMUX_WORKSPACE_ID" "$HERDR_SESSION$HERDR_PANE"'],
+    cwd,
+  )) ?? ''
+  const [term = '', tmux = '', orca = '', codexHome = '', zellij = '', cmux = '', herdr = ''] = text.split('\n')
+  const name = orca || term === 'Orca'
+    ? 'Orca'
+    : cmux || /cmux/i.test(term)
+      ? 'cmux'
+      : herdr || /herdr/i.test(term)
+        ? 'herdr'
+        : tmux
+          ? 'tmux'
+          : zellij
+            ? 'zellij'
+            : term || '터미널'
+  host = { name, orcaData: orca || undefined, codexHome: codexHome || undefined }
+  return host
+}
+
+type OrcaPanes = { panes?: Record<string, { homeRoute?: string; accountId?: string | null }> }
+
+// Orca's per-pane choice holds ids only (no credentials): which account home a
+// Codex pane runs with, or the real ~/.codex.
+async function orcaCodexHomes($: EngineInterface, orcaData: string) {
+  let panes: OrcaPanes['panes'] = {}
+  try {
+    panes = (JSON.parse(await $.fs.read(`${orcaData}/codex-pane-accounts.json`)) as OrcaPanes).panes ?? {}
+  } catch {}
+  const counts = new Map<string, number>()
+  let realHome = 0
+  for (const pane of Object.values(panes)) {
+    if (pane.homeRoute === 'account-home' && pane.accountId) {
+      counts.set(pane.accountId, (counts.get(pane.accountId) ?? 0) + 1)
+    } else {
+      realHome += 1
+    }
+  }
+  const managed = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([id, panes]) => ({ id, panes, home: `${orcaData}/codex-accounts/${id}/home` }))
+  return { managed, realHome }
 }
 
 async function checkService($: EngineInterface, id: string, cwd: string): Promise<Check> {
@@ -192,9 +253,31 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
       return who ? { account: who } : { note: 'gcloud 명령 없음' }
     }
     case 'codex': {
-      const account = await codexAccount($, cwd)
+      const where = await detectHost($, cwd)
+      const label = (account: CodexAccount | undefined) =>
+        account?.email ? `${account.email}${account.planType ? ` (${account.planType})` : ''}` : undefined
+      if (where.orcaData) {
+        // Orca: the account most of its panes run with leads; the rest follow.
+        const { managed, realHome } = await orcaCodexHomes($, where.orcaData)
+        const lines: string[] = []
+        let lead: string | undefined
+        for (const home of managed) {
+          const who = label(await codexAccount($, cwd, home.home))
+          if (!who) continue
+          if (!lead) lead = who
+          else lines.push(`${who} · Orca 관리 · 창 ${home.panes}개`)
+        }
+        if (realHome > 0) {
+          const fallback = label(await codexAccount($, cwd, where.codexHome))
+          if (fallback && !lead) lead = fallback
+          else if (fallback) lines.push(`${fallback} · 기본 로그인 · 창 ${realHome}개`)
+        }
+        const leadNote = managed[0] && lead ? `Orca 관리 계정 · 창 ${managed[0].panes}개` : 'Orca · 기본 로그인'
+        return lead ? { account: lead, detail: [leadNote, ...lines].join('\n') } : { note: '로그인 안 됨' }
+      }
+      const account = await codexAccount($, cwd, where.codexHome)
       if (account?.email) {
-        return { account: account.email, detail: account.planType ? `ChatGPT ${account.planType}` : undefined }
+        return { account: label(account), detail: where.codexHome ? `CODEX_HOME ${where.codexHome}` : '기본 로그인 (~/.codex)' }
       }
       const status = firstLine(await run($, ['codex', 'login', 'status'], cwd))
       if (!status) return { note: 'codex 명령 없음' }
@@ -290,6 +373,7 @@ export const register: Register = on => {
   live = new Map()
   transcriptPath = undefined
   isRefreshing = false
+  host = undefined
 
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -351,6 +435,7 @@ export const register: Register = on => {
           <Button key="close" role="dismiss" onPress={() => void $.ui.close({ id: PANE })}>닫기</Button>
         </Box>
         <Box flexDirection="row" gap={1} marginTop={1}>
+          {host && <Text backgroundColor="magenta" color="black"> {host.name} </Text>}
           {connected > 0 && <Text backgroundColor="green" color="black"> 연결 {connected} </Text>}
           {unknown > 0 && <Text backgroundColor="gray" color="black"> 확인 불가 {unknown} </Text>}
           {current.isChecking && <Text backgroundColor="yellow" color="black"> 확인 중… </Text>}
@@ -372,7 +457,7 @@ export const register: Register = on => {
                   {'    '}
                   {row.account ? <Text color="cyan">{row.account}</Text> : <Text dimColor>{row.note ?? '확인 못 함'}</Text>}
                 </Text>
-                {row.detail && <Text dimColor>{'    '}{row.detail}</Text>}
+                {row.detail?.split('\n').map(line => <Text dimColor>{'    '}{line}</Text>)}
               </Box>
             ))}
           </Box>
