@@ -1,5 +1,16 @@
 export type ServiceId = string
 
+// active: what this session's tools use now; in-use: signed in and used
+// elsewhere (other panes, other tools); inactive: signed in, used by nothing.
+export type AccountState = 'active' | 'in-use' | 'inactive'
+
+export type AccountLine = {
+  value: string
+  state: AccountState
+  // Where the login lives and who uses it, in words
+  where?: string
+}
+
 export type ServiceRow = {
   id: ServiceId
   name: string
@@ -13,6 +24,8 @@ export type ServiceRow = {
   detail?: string
   // Set when the account check ran and could not tell
   note?: string
+  // Every account signed in for the service, the active one first
+  accounts?: AccountLine[]
 }
 
 export type AccountsView = {
