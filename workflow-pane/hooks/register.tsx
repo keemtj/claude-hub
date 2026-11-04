@@ -28,6 +28,53 @@ const WALK = [IDLE, [' ▐▛███▜▌ ', '▝▜█████▛▘', '
 const CHEER = ['▗▐▛███▜▌▖', ' ▜█████▛ ', '  ▘▘ ▝▝  ']
 const SAD = [' ▐▙███▟▌ ', '▝▜█████▛▘', '  ▘▘ ▝▝  ']
 
+// The resting scene: Clawd drifting among twinkling stars.
+const SPACE_W = 21
+const SPACE_H = 6
+const SPRITE_COL = 6
+const STARS: { row: number; col: number; color: string }[] = [
+  { row: 0, col: 1, color: 'white' },
+  { row: 0, col: 12, color: 'cyan' },
+  { row: 1, col: 18, color: 'magenta' },
+  { row: 2, col: 0, color: 'cyan' },
+  { row: 3, col: 17, color: 'white' },
+  { row: 4, col: 3, color: 'magenta' },
+  { row: 5, col: 10, color: 'white' },
+  { row: 5, col: 19, color: 'cyan' },
+]
+const TWINKLE = ['·', '✧', '✦', '✧', '·', ' ']
+
+type Cell = { ch: string; color?: string }
+
+// Rows of colored runs: the stars first, the sprite over them.
+function spaceScene(sprite: string[], tick: number): { text: string; color?: string }[][] {
+  const grid: Cell[][] = Array.from({ length: SPACE_H }, () =>
+    Array.from({ length: SPACE_W }, () => ({ ch: ' ' })),
+  )
+  STARS.forEach((star, i) => {
+    const row = grid[star.row]
+    if (row) row[star.col] = { ch: TWINKLE[(tick + i * 2) % TWINKLE.length] ?? '·', color: star.color }
+  })
+  // Drift one row up and down, a step every two ticks.
+  const top = 1 + (Math.floor(tick / 2) % 4 < 2 ? 0 : 1)
+  sprite.forEach((line, r) => {
+    const row = grid[top + r]
+    if (!row) return
+    ;[...line].forEach((ch, c) => {
+      if (ch !== ' ') row[SPRITE_COL + c] = { ch, color: 'claude' }
+    })
+  })
+  return grid.map(row => {
+    const runs: { text: string; color?: string }[] = []
+    for (const cell of row) {
+      const last = runs[runs.length - 1]
+      if (last && last.color === cell.color) last.text += cell.ch
+      else runs.push({ text: cell.ch, color: cell.color })
+    }
+    return runs
+  })
+}
+
 // Run files: read every SYNC_EVERY ticks while something runs.
 const TICK_MS = 500
 const SYNC_EVERY = 10
@@ -253,22 +300,32 @@ async function syncFromFiles($: EngineInterface) {
 
 let stopTicking: (() => void) | undefined
 
-// Animate only while some run is going, so an idle pane costs nothing.
+// Animate while a run is going or the pane is on screen (the space scene), and
+// stop otherwise so a closed, idle pane costs nothing.
 async function syncTicking($: EngineInterface) {
   const list = await read($, runs)
   const anyActive = list.some(run => run.status === 'running' || run.agents.some(isActive))
-  if (anyActive && !stopTicking) {
+  const panes = await $.ui.panes().catch(() => [])
+  const isShown = panes.some(pane => pane.id === PANE && pane.isPlaced)
+  const shouldTick = anyActive || isShown
+  if (shouldTick && !stopTicking) {
     let ticks = 0
     const timer = $.clock.every(TICK_MS, () => {
       void update($, frame, n => (n + 1) % 1000)
       ticks += 1
-      if (ticks % SYNC_EVERY === 0) void syncFromFiles($).catch(() => {})
+      if (ticks % SYNC_EVERY === 0) void syncWhileRunning($).catch(() => {})
     })
     stopTicking = () => timer.cancel()
-  } else if (!anyActive && stopTicking) {
+  } else if (!shouldTick && stopTicking) {
     stopTicking()
     stopTicking = undefined
   }
+}
+
+async function syncWhileRunning($: EngineInterface) {
+  const list = await read($, runs)
+  if (list.some(run => run.status === 'running' || run.agents.some(isActive))) await syncFromFiles($)
+  else await syncTicking($)
 }
 
 export const register: Register = on => {
@@ -290,10 +347,12 @@ export const register: Register = on => {
   on('command.run', { command: 'workflow-pane' }, async ($, e) => {
     if (e.args.trim() === 'close') {
       await $.ui.close({ id: PANE })
+      await syncTicking($)
       return { text: '워크플로 패널을 닫았습니다.' }
     }
     await syncFromFiles($).catch(() => {})
     const opened = await $.ui.open({ id: PANE, title: TITLE })
+    await syncTicking($)
     return {
       text: opened.isPlaced
         ? '워크플로 패널을 열었습니다.'
@@ -380,6 +439,12 @@ export const register: Register = on => {
     return done
   })
 
+  on('ui.close', { id: PANE }, async ($, e, next) => {
+    const closed = await next(e)
+    void $.clock.after(0, () => void syncTicking($))
+    return closed
+  })
+
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const close = () => void $.ui.close({ id: PANE })
@@ -391,7 +456,9 @@ export const register: Register = on => {
     if (!run) {
       return (
         <Box flexDirection="column">
-          {IDLE.map(line => <Text color="claude">{line}</Text>)}
+          {spaceScene(IDLE, tick).map(row => (
+            <Text>{row.map(part => <Text color={part.color}>{part.text}</Text>)}</Text>
+          ))}
           <Text dimColor>아직 실행한 워크플로가 없습니다.</Text>
           <Button key="close" role="dismiss" onPress={close}>닫기</Button>
         </Box>
@@ -438,7 +505,11 @@ export const register: Register = on => {
       <Box flexDirection="column">
         <Box flexDirection="row" gap={1}>
           <Box flexDirection="column">
-            {art.map(line => <Text color="claude">{line}</Text>)}
+            {going
+              ? art.map(line => <Text color="claude">{line}</Text>)
+              : spaceScene(art, tick).map(row => (
+                  <Text>{row.map(part => <Text color={part.color}>{part.text}</Text>)}</Text>
+                ))}
           </Box>
           <Box flexDirection="column">
             <Text bold color="magenta">{run.name}</Text>
