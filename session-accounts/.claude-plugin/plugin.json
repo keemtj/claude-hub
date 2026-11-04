@@ -1,6 +1,6 @@
 {
   "name": "session-accounts",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "이 세션이 쓴 서비스와 지금 연결된 계정을 옆 패널에 보여 준다 (/accounts)",
   "author": {
     "name": "keemtj"

@@ -533,10 +533,7 @@ export const register: Register = on => {
             <Text bold color="magenta">{group.category}</Text>
             {group.rows.map(row => (
               <Box flexDirection="column" marginTop={1}>
-                <Text>
-                  <Text bold>{' '}{row.name}</Text>
-                  <Text dimColor>  {row.reasons.join(' · ')}</Text>
-                </Text>
+                <Text bold>{' '}{row.name}</Text>
                 {(row.accounts ?? []).length === 0 && (
                   <Text>
                     {'   '}
