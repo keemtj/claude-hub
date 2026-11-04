@@ -251,8 +251,9 @@ export const register: Register = on => {
       )
     })
 
+    // A card: a rounded border on all four sides, inside the engine's frame.
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" borderStyle="round" borderColor="claude" paddingX={1}>
         <Box flexDirection="row" gap={1}>
           {tabButton('plugins', '플러그인', current.plugins.length)}
           {tabButton('skills', '스킬', current.skills.length)}
