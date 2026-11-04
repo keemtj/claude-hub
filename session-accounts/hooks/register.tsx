@@ -125,10 +125,11 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
       const name = firstLine(await run($, ['git', 'config', 'user.name'], cwd))
       const email = firstLine(await run($, ['git', 'config', 'user.email'], cwd))
       const remote = firstLine(await run($, ['git', 'remote', 'get-url', 'origin'], cwd))
+      const isRemote = remote !== undefined && /^(https?:\/\/|ssh:\/\/|git@)/.test(remote)
       return {
         account: email ? `${name ?? ''} <${email}>`.trim() : undefined,
-        detail: remote && !remote.includes('fatal') ? cleanRemote(remote) : undefined,
-        note: email ? undefined : '커밋 계정이 설정되지 않음',
+        detail: isRemote ? cleanRemote(remote) : undefined,
+        note: email ? undefined : '커밋 계정 미설정',
       }
     }
     case 'github': {
@@ -158,13 +159,24 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
     }
     case 'codex': {
       const status = firstLine(await run($, ['codex', 'login', 'status'], cwd))
-      return status ? { account: status } : { note: 'codex 명령 없음' }
+      if (!status) return { note: 'codex 명령 없음' }
+      if (/not logged in/i.test(status)) return { note: '로그인 안 됨' }
+      const method = status.match(/using (.+)$/i)?.[1]
+      return { account: method ? `${method} 로그인` : status, detail: '이메일은 Codex CLI가 알려 주지 않음' }
     }
     case 'claude': {
+      const text = await run($, ['claude', 'auth', 'status'], cwd)
+      try {
+        const status = JSON.parse(text ?? '') as Record<string, unknown>
+        const pick = (key: string) => (typeof status[key] === 'string' ? (status[key] as string) : undefined)
+        const email = pick('email')
+        const detail = [pick('orgName'), pick('subscriptionType')].filter(Boolean).join(' · ') || undefined
+        if (email) return { account: email, detail }
+        if (status.loggedIn === false) return { note: '로그인 안 됨' }
+      } catch {}
       const who = await $.session.identity().catch(() => undefined)
-      const kind = who && 'kind' in who ? who.kind : undefined
       const email = who && 'email' in who ? who.email : undefined
-      return email ? { account: email, detail: kind } : { account: kind ?? '알 수 없음' }
+      return email ? { account: email } : { note: '계정 확인 실패' }
     }
     case 'mcp:figma-desktop':
       return { note: 'Figma 데스크톱 앱에 로그인한 계정' }
@@ -286,15 +298,23 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const current: AccountsView = await read($, view)
+    const connected = current.rows.filter(row => row.account).length
+    const unknown = current.rows.length - connected
 
     return (
       <Box flexDirection="column">
         <Box flexDirection="row" gap={1}>
           <Text bold color="claude">이 세션의 계정</Text>
-          <Text dimColor>{current.isChecking ? '확인 중…' : ago(current.checkedAt)}</Text>
           <Box flexGrow={1} />
           <Button key="refresh" onPress={() => void refresh($)}>새로고침</Button>
           <Button key="close" role="dismiss" onPress={() => void $.ui.close({ id: PANE })}>닫기</Button>
+        </Box>
+        <Box flexDirection="row" gap={1} marginTop={1}>
+          {connected > 0 && <Text backgroundColor="green" color="black"> 연결 {connected} </Text>}
+          {unknown > 0 && <Text backgroundColor="gray" color="black"> 확인 불가 {unknown} </Text>}
+          <Text backgroundColor={current.isChecking ? 'yellow' : 'blackBright'} color="black">
+            {' '}{current.isChecking ? '확인 중…' : ago(current.checkedAt)}{' '}
+          </Text>
         </Box>
         {current.rows.length === 0 && (
           <Text dimColor>{current.isChecking ? '세션 기록을 읽는 중입니다.' : '아직 찾은 서비스가 없습니다.'}</Text>
