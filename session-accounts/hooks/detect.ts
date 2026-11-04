@@ -97,6 +97,45 @@ export function usageText(usage: Usage): string[] {
   return out
 }
 
+// The kind of service, so the pane can group them. A server this table does not
+// know falls under "기타 연결".
+export const CATEGORIES = [
+  'AI 에이전트',
+  '코드 저장소',
+  '배포·호스팅',
+  '클라우드',
+  '백엔드 SaaS',
+  '패키지 레지스트리',
+  '협업·디자인 SaaS',
+  '기타 연결',
+] as const
+export type Category = (typeof CATEGORIES)[number]
+
+const CATEGORY_OF: Record<string, Category> = {
+  claude: 'AI 에이전트',
+  codex: 'AI 에이전트',
+  git: '코드 저장소',
+  github: '코드 저장소',
+  vercel: '배포·호스팅',
+  expo: '배포·호스팅',
+  aws: '클라우드',
+  gcloud: '클라우드',
+  supabase: '백엔드 SaaS',
+  firebase: '백엔드 SaaS',
+  npm: '패키지 레지스트리',
+}
+
+const COLLABORATION = /slack|notion|linear|figma|jira|confluence|atlassian|asana|monday|miro|canva|google_drive|gmail|microsoft_365|box|hubspot|intercom|mobbin|claude_docs/i
+
+export function categoryOf(id: string): Category {
+  const fixed = CATEGORY_OF[id]
+  if (fixed) return fixed
+  if (id.startsWith('mcp:') && COLLABORATION.test(id)) return '협업·디자인 SaaS'
+  if (/github/i.test(id)) return '코드 저장소'
+  if (/vercel/i.test(id)) return '배포·호스팅'
+  return '기타 연결'
+}
+
 // Order: what the session leaned on most, then by name.
 export function sortRows<T extends { id: string; weight: number; name: string }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => b.weight - a.weight || a.name.localeCompare(b.name))

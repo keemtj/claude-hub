@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AccountsView, ServiceRow } from '../types'
-import { displayName, record, scanTranscript, sortRows, usageText } from './detect'
+import { CATEGORIES, categoryOf, displayName, record, scanTranscript, sortRows, usageText } from './detect'
 import type { Detected } from './detect'
 
 const PANE = 'session-accounts'
@@ -12,7 +12,7 @@ const TITLE = 'Accounts'
 const view = atom(
   { plugin: 'session-accounts', key: 'view' } as const,
   { rows: [], isChecking: false },
-  { shape: 'view-1' },
+  { shape: 'view-2' },
 )
 
 // Tool calls seen live since the last full scan of the transcript.
@@ -224,6 +224,7 @@ async function refresh($: EngineInterface) {
         const row: ServiceRow & { weight: number } = {
           id,
           name: displayName(id),
+          category: categoryOf(id),
           reasons: reasons.length > 0 ? reasons : ['이 세션'],
           account: check.account,
           detail,
@@ -300,6 +301,11 @@ export const register: Register = on => {
     const current: AccountsView = await read($, view)
     const connected = current.rows.filter(row => row.account).length
     const unknown = current.rows.length - connected
+    // Groups in a fixed order; within one, the order refresh sorted them in.
+    const groups = CATEGORIES.map(category => ({
+      category,
+      rows: current.rows.filter(row => (row.category ?? '기타 연결') === category),
+    })).filter(group => group.rows.length > 0)
 
     return (
       <Box flexDirection="column">
@@ -319,18 +325,23 @@ export const register: Register = on => {
         {current.rows.length === 0 && (
           <Text dimColor>{current.isChecking ? '세션 기록을 읽는 중입니다.' : '아직 찾은 서비스가 없습니다.'}</Text>
         )}
-        {current.rows.map(row => (
+        {groups.map(group => (
           <Box flexDirection="column" marginTop={1}>
-            <Text>
-              <Text color={row.account ? 'green' : 'gray'}>{row.account ? '● ' : '○ '}</Text>
-              <Text bold>{row.name}</Text>
-              <Text dimColor>  {row.reasons.join(' · ')}</Text>
-            </Text>
-            <Text>
-              {'   '}
-              {row.account ? <Text color="cyan">{row.account}</Text> : <Text dimColor>{row.note ?? '확인 못 함'}</Text>}
-            </Text>
-            {row.detail && <Text dimColor>{'   '}{row.detail}</Text>}
+            <Text bold color="magenta">{group.category}</Text>
+            {group.rows.map(row => (
+              <Box flexDirection="column">
+                <Text>
+                  <Text color={row.account ? 'green' : 'gray'}>{row.account ? ' ● ' : ' ○ '}</Text>
+                  <Text bold>{row.name}</Text>
+                  <Text dimColor>  {row.reasons.join(' · ')}</Text>
+                </Text>
+                <Text>
+                  {'    '}
+                  {row.account ? <Text color="cyan">{row.account}</Text> : <Text dimColor>{row.note ?? '확인 못 함'}</Text>}
+                </Text>
+                {row.detail && <Text dimColor>{'    '}{row.detail}</Text>}
+              </Box>
+            ))}
           </Box>
         ))}
       </Box>

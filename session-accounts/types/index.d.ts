@@ -3,6 +3,8 @@ export type ServiceId = string
 export type ServiceRow = {
   id: ServiceId
   name: string
+  // The group it is drawn under: "AI 에이전트", "코드 저장소", ...
+  category: string
   // Why it is listed: "명령 3회", "MCP 5회", "설정 파일"
   reasons: string[]
   // Who it is signed in as now, when that can be asked
