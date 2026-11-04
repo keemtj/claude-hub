@@ -12,7 +12,7 @@ const TITLE = 'Accounts'
 const view = atom(
   { plugin: 'session-accounts', key: 'view' } as const,
   { rows: [], isChecking: false },
-  { shape: 'view-3' },
+  { shape: 'view-4' },
 )
 
 // Tool calls seen live since the last full scan of the transcript.
@@ -112,7 +112,6 @@ async function run($: EngineInterface, argv: string[], cwd: string): Promise<str
 
 const STATE_LOOK: Record<AccountLine['state'], { label: string; color: string }> = {
   active: { label: '활성', color: 'green' },
-  'in-use': { label: '사용 중', color: 'yellow' },
   inactive: { label: '비활성', color: 'gray' },
 }
 
@@ -325,19 +324,19 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
           const isLead = panes > 0 && id === managed[0]?.id
           accounts.push({
             value: who,
-            state: isLead ? 'active' : panes > 0 ? 'in-use' : 'inactive',
+            state: isLead ? 'active' : 'inactive',
             where:
               panes > 0
-                ? `Orca가 관리하는 계정 · Orca의 Codex 창 ${panes}개가 사용`
-                : 'Orca가 관리하는 계정 · 등록만 됨, 사용하는 창 없음',
+                ? `Orca가 관리하는 계정 · 이 계정을 고른 Orca Codex 창 기록 ${panes}개`
+                : 'Orca가 관리하는 계정 · 등록만 됨, 고른 창 없음',
           })
         }
         const fallback = label(await codexAccount($, cwd, where.codexHome))
         if (fallback) {
           accounts.push({
             value: fallback,
-            state: accounts.some(a => a.state === 'active') ? (realHome > 0 ? 'in-use' : 'inactive') : 'active',
-            where: `기본 로그인 (${where.codexHome ?? '~/.codex'}) · Orca 밖에서 실행한 codex${realHome > 0 ? `와 계정을 고르지 않은 Orca 창 ${realHome}개` : ''}가 사용`,
+            state: accounts.some(a => a.state === 'active') ? 'inactive' : 'active',
+            where: `기본 로그인 (${where.codexHome ?? '~/.codex'}) · Orca 밖에서 실행한 codex가 씀${realHome > 0 ? ` · 계정을 고르지 않은 Orca 창 기록 ${realHome}개` : ''}`,
           })
         }
         return accounts.length ? { account: accounts[0]?.value, accounts } : { note: '로그인 안 됨' }
@@ -527,7 +526,7 @@ export const register: Register = on => {
           {current.isChecking && <Text backgroundColor="yellow" color="black"> 확인 중… </Text>}
         </Box>
         <Text dimColor>
-          활성: 이 세션의 도구가 지금 쓰는 계정 · 사용 중: 다른 창이나 도구가 쓰는 계정 · 비활성: 로그인만 되어 있음
+          활성: 지금 선택되어 쓰이는 계정 · 비활성: 로그인은 되어 있지만 지금 선택된 계정이 아님
         </Text>
         {current.rows.length === 0 && (
           <Text dimColor>{current.isChecking ? '세션 기록을 읽는 중입니다.' : '아직 찾은 서비스가 없습니다.'}</Text>

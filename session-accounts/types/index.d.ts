@@ -1,8 +1,8 @@
 export type ServiceId = string
 
-// active: what this session's tools use now; in-use: signed in and used
-// elsewhere (other panes, other tools); inactive: signed in, used by nothing.
-export type AccountState = 'active' | 'in-use' | 'inactive'
+// active: the account selected and used now; inactive: signed in, but not the
+// one selected.
+export type AccountState = 'active' | 'inactive'
 
 export type AccountLine = {
   value: string
