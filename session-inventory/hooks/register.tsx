@@ -185,6 +185,8 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // With one pane open the engine draws no title row, so the body's first row
+  // sits at the very top, under Orca's window buttons: start one row down.
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const current: Inventory = await read($, inventory)
@@ -251,9 +253,8 @@ export const register: Register = on => {
       )
     })
 
-    // A card: a rounded border on all four sides, inside the engine's frame.
     return (
-      <Box flexDirection="column" borderStyle="round" borderColor="claude" paddingX={1}>
+      <Box flexDirection="column" marginTop={1}>
         <Box flexDirection="row" gap={1}>
           {tabButton('plugins', '플러그인', current.plugins.length)}
           {tabButton('skills', '스킬', current.skills.length)}

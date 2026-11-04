@@ -328,6 +328,8 @@ export const register: Register = on => {
     return result
   }).catch(($, e, next) => next(e))
 
+  // With one pane open the engine draws no title row, so the body's first row
+  // sits at the very top, under Orca's window buttons: start one row down.
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const current: AccountsView = await read($, view)
@@ -340,7 +342,7 @@ export const register: Register = on => {
     })).filter(group => group.rows.length > 0)
 
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" marginTop={1}>
         <Box flexDirection="row" gap={1}>
           <Text bold color="claude">이 세션의 계정</Text>
           <Box flexGrow={1} />
