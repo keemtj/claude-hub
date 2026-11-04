@@ -111,9 +111,12 @@ async function run($: EngineInterface, argv: string[], cwd: string): Promise<str
 }
 
 const STATE_LOOK: Record<AccountLine['state'], { label: string; color: string }> = {
-  active: { label: '활성', color: 'green' },
-  inactive: { label: '비활성', color: 'gray' },
+  active: { label: '  활성  ', color: 'green' },
+  inactive: { label: ' 비활성 ', color: 'gray' },
 }
+
+// The state label's column: '  활성  ', ' 비활성 ' and '확인불가' are all 8 cells.
+const LABEL_WIDTH = 8
 
 const firstLine = (text: string | undefined) =>
   text
@@ -276,7 +279,8 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
         if (/^\S/.test(line)) hostName = line.trim()
         const login = line.match(/Logged in to (\S+) account (\S+)/)
         if (login) {
-          pending = { value: login[2] ?? '', state: 'inactive', where: login[1] ?? hostName }
+          const server = login[1] ?? hostName
+          pending = { value: login[2] ?? '', state: 'inactive', where: server === 'github.com' ? undefined : server }
           accounts.push(pending)
         }
         if (pending && /Active account:\s*true/.test(line)) pending.state = 'active'
@@ -360,8 +364,19 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
         const status = JSON.parse(text ?? '') as Record<string, unknown>
         const pick = (key: string) => (typeof status[key] === 'string' ? (status[key] as string) : undefined)
         const email = pick('email')
-        const detail = [pick('orgName'), pick('subscriptionType')].filter(Boolean).join(' · ') || undefined
-        if (email) return { account: email, detail }
+        const method = pick('authMethod')
+        const provider = pick('apiProvider')
+        // claude.ai is a subscription login; console and keys bill the API.
+        const how =
+          provider && provider !== 'firstParty'
+            ? provider
+            : method === 'claude.ai'
+              ? '구독'
+              : method
+                ? 'API 키'
+                : undefined
+        const where = [how, pick('orgName'), pick('subscriptionType')].filter(Boolean).join(' · ') || undefined
+        if (email) return { account: email, accounts: [{ value: email, state: 'active', where }] }
         if (status.loggedIn === false) return { note: '로그인 안 됨' }
       } catch {}
       const who = await $.session.identity().catch(() => undefined)
@@ -381,7 +396,6 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
 
 // Words for services that hold one login.
 const SINGLE_WHERE: Record<string, string> = {
-  claude: 'claude auth',
   vercel: 'vercel CLI',
   expo: 'eas CLI',
   aws: 'AWS 자격 증명',
@@ -533,25 +547,35 @@ export const register: Register = on => {
             <Text bold color="magenta">{group.category}</Text>
             {group.rows.map(row => (
               <Box flexDirection="column" marginTop={1}>
-                <Text bold>{' '}{row.name}</Text>
+                <Box marginLeft={1}>
+                  <Text bold>{row.name}</Text>
+                </Box>
                 {(row.accounts ?? []).length === 0 && (
-                  <Text>
-                    {'   '}
-                    <Text backgroundColor="gray" color="black"> 확인 불가 </Text>
-                    <Text dimColor> {row.note ?? '확인 못 함'}</Text>
-                  </Text>
+                  <Box flexDirection="row" marginLeft={2} gap={1}>
+                    <Box width={LABEL_WIDTH} flexShrink={0}>
+                      <Text backgroundColor="gray" color="black">확인불가</Text>
+                    </Box>
+                    <Text dimColor>{row.note ?? '확인 못 함'}</Text>
+                  </Box>
                 )}
                 {(row.accounts ?? []).map(line => (
-                  <Box flexDirection="column">
-                    <Text>
-                      {'   '}
-                      <Text backgroundColor={STATE_LOOK[line.state].color} color="black"> {STATE_LOOK[line.state].label} </Text>
-                      <Text color={line.state === 'active' ? 'cyan' : undefined} dimColor={line.state === 'inactive'}> {line.value}</Text>
-                    </Text>
-                    {line.where && <Text dimColor>{'          '}{line.where}</Text>}
+                  <Box flexDirection="row" marginLeft={2} gap={1}>
+                    <Box width={LABEL_WIDTH} flexShrink={0}>
+                      <Text backgroundColor={STATE_LOOK[line.state].color} color="black">{STATE_LOOK[line.state].label}</Text>
+                    </Box>
+                    <Box flexDirection="column" flexShrink={1}>
+                      <Text color={line.state === 'active' ? 'cyan' : undefined} dimColor={line.state === 'inactive'}>
+                        {line.value}
+                      </Text>
+                      {line.where && <Text dimColor>{line.where}</Text>}
+                    </Box>
                   </Box>
                 ))}
-                {row.detail?.split('\n').map(text => <Text dimColor>{'   '}{text}</Text>)}
+                {row.detail && (
+                  <Box marginLeft={2 + LABEL_WIDTH + 1}>
+                    <Text dimColor>{row.detail}</Text>
+                  </Box>
+                )}
               </Box>
             ))}
           </Box>
