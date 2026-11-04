@@ -234,6 +234,19 @@ async function orcaWorktreePicks($: EngineInterface, orcaData: string, worktree:
   return { accountIds, usesRealHome }
 }
 
+// Orca's active Codex account: `owner` "managed" with the account id it runs,
+// or "system-default" for ~/.codex. The file also holds credentials, so only
+// those two fields are taken from it, and nothing of it is shown or logged.
+async function orcaActiveAccount($: EngineInterface, orcaData: string): Promise<string | 'default' | undefined> {
+  try {
+    const text = await $.fs.read(`${orcaData}/codex-runtime-home/shared-runtime-auth-provenance.json`)
+    const data = JSON.parse(text) as { owner?: unknown; accountId?: unknown }
+    if (data.owner === 'managed' && typeof data.accountId === 'string') return data.accountId
+    if (data.owner === 'system-default') return 'default'
+  } catch {}
+  return undefined
+}
+
 async function checkService($: EngineInterface, id: string, cwd: string): Promise<Check> {
   switch (id) {
     case 'git': {
@@ -310,38 +323,38 @@ async function checkService($: EngineInterface, id: string, cwd: string): Promis
       const where = await detectHost($, cwd)
       const label = (account: CodexAccount | undefined) =>
         account?.email ? `${account.email}${account.planType ? ` (${account.planType})` : ''}` : undefined
-      // Active: what codex run from this session uses (its CODEX_HOME, else
-      // ~/.codex). Orca's own accounts follow as context, tagged.
+      // In Orca the active account is the one Orca runs Codex with; elsewhere
+      // it is what codex from this session uses (CODEX_HOME, else ~/.codex).
       const accounts: AccountLine[] = []
       const homeLabel = where.codexHome ?? '~/.codex'
       const mine = label(await codexAccount($, cwd, where.codexHome))
       if (where.orcaData) {
+        const active = await orcaActiveAccount($, where.orcaData)
         const picks = await orcaWorktreePicks($, where.orcaData, where.orcaWorktree)
-        if (mine) {
-          accounts.push({
-            value: mine,
-            state: 'active',
-            where: ['이 세션', `기본 ${homeLabel}`, picks.usesRealHome ? '이 워크스페이스 Orca 창' : undefined]
-              .filter(Boolean)
-              .join(' · '),
-          })
-        }
         const ids = (await $.fs.list(`${where.orcaData}/codex-accounts`).catch(() => []))
           .filter(entry => entry.kind === 'dir')
           .map(entry => entry.name)
-          .sort((a, b) => Number(picks.accountIds.has(b)) - Number(picks.accountIds.has(a)))
         for (const id of ids) {
           const who = label(await codexAccount($, cwd, `${where.orcaData}/codex-accounts/${id}/home`))
           if (!who) continue
-          const tag = picks.accountIds.has(id) ? '이 워크스페이스 Orca 창 · Orca 관리' : 'Orca 관리'
-          const same = accounts.find(a => a.value === who)
-          if (same) same.where = `${same.where} · ${tag}`
-          else accounts.push({ value: who, state: 'inactive', where: tag })
+          accounts.push({
+            value: who,
+            state: id === active ? 'active' : 'inactive',
+            where: picks.accountIds.has(id) ? 'Orca 관리 · 이 워크스페이스' : 'Orca 관리',
+          })
         }
+        if (mine) {
+          accounts.push({
+            value: mine,
+            state: active === 'default' ? 'active' : 'inactive',
+            where: `기본 ${homeLabel}`,
+          })
+        }
+        accounts.sort((a, b) => Number(b.state === 'active') - Number(a.state === 'active'))
         return accounts.length ? { account: accounts[0]?.value, accounts } : { note: '로그인 안 됨' }
       }
       if (mine) {
-        return { account: mine, accounts: [{ value: mine, state: 'active', where: `이 세션 · 기본 ${homeLabel}` }] }
+        return { account: mine, accounts: [{ value: mine, state: 'active', where: `기본 ${homeLabel}` }] }
       }
       const status = firstLine(await run($, ['codex', 'login', 'status'], cwd))
       if (!status) return { note: 'codex 명령 없음' }
