@@ -1,0 +1,18 @@
+{
+  "name": "dev-cat",
+  "version": "0.1.0",
+  "description": "옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다 (/devcat)",
+  "author": {
+    "name": "keemtj"
+  },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "giphyApiKey": {
+      "type": "string",
+      "title": "GIPHY API key",
+      "description": "developers.giphy.com에서 받은 API 키. 비워 두면 cataas.com 고양이를 보여 준다.",
+      "sensitive": true,
+      "required": false
+    }
+  }
+}
