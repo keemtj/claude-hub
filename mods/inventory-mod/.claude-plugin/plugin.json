@@ -1,0 +1,9 @@
+{
+  "name": "inventory-mod",
+  "version": "0.2.0",
+  "description": "플러그인·mod, 스킬, MCP 서버를 한 패널에서 보고 켜고 끈다 (/inventory-mod)",
+  "author": {
+    "name": "keemtj"
+  },
+  "types": "./types/index.d.ts"
+}

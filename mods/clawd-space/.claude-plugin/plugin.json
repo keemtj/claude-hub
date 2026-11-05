@@ -1,7 +1,0 @@
-{
-  "name": "clawd-space",
-  "version": "0.2.0",
-  "description": "프롬프트 위에 우주를 떠다니는 우주인 Clawd를 그린다 (/meditate로 켜고 끔)",
-  "author": { "name": "keemtj" },
-  "types": "./types/index.d.ts"
-}
