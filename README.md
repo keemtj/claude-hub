@@ -1,44 +1,50 @@
 # claude-hub
 
-keemtj가 만든 Claude Code 자산 모음(허브)이다. 폴더 하나가 독립 플러그인이고, 필요한 것만 골라 설치한다.
+**English** | [한국어](README.ko.md)
 
-## 설치
+A personal collection of Claude Code assets by keemtj. Each folder is a standalone plugin; install only the ones you want.
+
+## Install
 
 ```sh
 /plugin marketplace add keemtj/claude-hub
 /plugin install cat-gif-mod@claude-hub
 ```
 
-이 저장소를 내려받아 개발할 때는 폴더를 마켓플레이스로 추가한다. 설치본이 폴더를 직접 읽으므로 고친 뒤 `/reload-plugins`만 하면 된다.
+To develop on a local clone, add the folder itself as a marketplace. Installed plugins read the folder directly, so after editing just run `/reload-plugins`.
 
 ```sh
-claude plugin marketplace add <이 폴더>
+claude plugin marketplace add <path-to-this-folder>
 ```
 
-## mod
+## Mods
 
-| 이름이자 명령 | 하는 일 |
+| Name and command | What it does |
 |---|---|
-| `workflow-mod` | 워크플로 진행 상황을 단계별로 옆 패널에 보여 주고, Clawd와 우주 장면을 띄운다 |
-| `meditate-mod` | 프롬프트 위에서 우주를 떠다니는 Clawd를 켜고 끈다 |
-| `accounts-mod` | 세션이 쓰는 서비스와 연결된 계정, 활성 여부를 옆 패널에 보여 준다 |
-| `ports-mod` | 세션이 띄운 프로세스가 열어 둔 포트를 옆 패널에 보여 준다 |
-| `inventory-mod` | 플러그인, 스킬, MCP 서버를 한 패널에서 보고 켜고 끈다 |
-| `cat-gif-mod` | 옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다(GIPHY 키는 선택) |
+| `workflow-mod` | Shows a workflow's progress phase by phase in a side pane, with Clawd floating in space between runs |
+| `meditate-mod` | Toggles Clawd drifting through space above the prompt |
+| `accounts-mod` | Shows the services the session uses and the accounts signed in to them, active or not, in a side pane |
+| `ports-mod` | Shows the ports opened by processes the session started, in a side pane |
+| `inventory-mod` | Lists plugins, skills and MCP servers in one pane and turns them on or off |
+| `cat-gif-mod` | Shows a cat GIF in a side pane and swaps it on refresh (GIPHY key optional) |
 
-슬래시 명령은 플러그인 이름과 같다. 자동완성이 부분 일치라서 `/mod`만 쳐도 모두 뜬다.
+Each slash command matches its plugin name. Command completion matches anywhere in the name, so typing `/mod` lists them all.
 
-## 구조와 이름 규칙
+## Layout and naming
 
 ```
-.claude-plugin/marketplace.json   플러그인 목록
-mods/      -mod     함수 훅 모듈(화면, 동작)
-hooks/     -hook    클래식 훅(셸 명령)
-skills/    -skill   스킬
-mcp/       -mcp     MCP 연결(서버 코드는 별도 저장소)
-agents/    -agent   서브에이전트
-plugins/   -plugin  여러 종류 묶음
-docs/               운영 문서
+.claude-plugin/marketplace.json   plugin list
+mods/      -mod     function hook modules (UI, behavior)
+hooks/     -hook    classic hooks (shell commands)
+skills/    -skill   skills
+mcp/       -mcp     MCP connections (server code lives in its own repo)
+agents/    -agent   subagents
+plugins/   -plugin  bundles of several kinds
+docs/               maintainer docs
 ```
 
-자산을 더할 때 따르는 규칙은 [docs/conventions.md](docs/conventions.md)에 있다.
+The rules for adding assets are in [docs/conventions.md](docs/conventions.md) (Korean).
+
+## License
+
+[MIT](LICENSE). Some mods fetch content from third-party services at run time; see each mod's README for the terms that apply.
