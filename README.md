@@ -43,7 +43,7 @@ plugins/   -plugin  bundles of several kinds
 docs/               maintainer docs
 ```
 
-The rules for adding assets are in [docs/conventions.md](docs/conventions.md) (Korean).
+The rules for adding assets are in [docs/conventions.md](docs/conventions.md).
 
 ## License
 
