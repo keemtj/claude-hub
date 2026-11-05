@@ -41,4 +41,4 @@ plugins/   -plugin  여러 종류 묶음
 docs/               운영 문서
 ```
 
-자세한 결정과 배경은 [docs/hub-plan.md](docs/hub-plan.md)에 있다.
+자산을 더할 때 따르는 규칙은 [docs/conventions.md](docs/conventions.md)에 있다.
