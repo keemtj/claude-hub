@@ -43,4 +43,4 @@ plugins/   -plugin  여러 종류 묶음
 docs/               운영 문서
 ```
 
-자산을 더할 때 따르는 규칙은 [docs/conventions.md](docs/conventions.md)에 있다.
+자산을 더할 때 따르는 규칙은 [docs/conventions.ko.md](docs/conventions.ko.md)에 있다.
