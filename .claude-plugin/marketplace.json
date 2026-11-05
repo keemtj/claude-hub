@@ -1,0 +1,47 @@
+{
+  "name": "claude-hub",
+  "owner": {
+    "name": "keemtj"
+  },
+  "metadata": {
+    "description": "keemtj가 만든 Claude Code 자산(mod, hook, skill, mcp, agent, plugin) 모음"
+  },
+  "plugins": [
+    {
+      "name": "workflow-mod",
+      "source": "./mods/workflow-mod",
+      "description": "워크플로 진행 상황을 옆 패널에 색과 캐릭터로 보여 준다",
+      "category": "mod"
+    },
+    {
+      "name": "meditate-mod",
+      "source": "./mods/meditate-mod",
+      "description": "프롬프트 위에 우주를 떠다니는 우주인 Clawd를 그린다 (/meditate-mod로 켜고 끔)",
+      "category": "mod"
+    },
+    {
+      "name": "accounts-mod",
+      "source": "./mods/accounts-mod",
+      "description": "이 세션이 쓴 서비스와 지금 연결된 계정을 옆 패널에 보여 준다 (/accounts-mod)",
+      "category": "mod"
+    },
+    {
+      "name": "ports-mod",
+      "source": "./mods/ports-mod",
+      "description": "이 세션이 띄운 프로세스가 열어 둔 포트를 옆 패널에 보여 준다 (/ports-mod)",
+      "category": "mod"
+    },
+    {
+      "name": "inventory-mod",
+      "source": "./mods/inventory-mod",
+      "description": "플러그인·mod, 스킬, MCP 서버를 한 패널에서 보고 켜고 끈다 (/inventory-mod)",
+      "category": "mod"
+    },
+    {
+      "name": "cat-mod",
+      "source": "./mods/cat-mod",
+      "description": "옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다 (/cat-mod)",
+      "category": "mod"
+    }
+  ]
+}
