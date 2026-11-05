@@ -1,0 +1,4 @@
+# Written by the engine when it loads a mod; type-checking only.
+*/*/.claude-plugin/types/
+*/*/tsconfig.json
+.DS_Store
