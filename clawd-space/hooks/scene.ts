@@ -11,20 +11,23 @@ const PLANET = 0x555555
 const SPARKLE = 0xf2d38a
 
 // Clawd in a bubble helmet. One letter per pixel; a cell holds two rows.
+// Clawd is Claude Code's logo glyph (▐▛███▜▌ / ▝▜█████▛▘ / ▘▘ ▝▝) taken
+// apart: each quarter-cell pixel of it, half as wide as tall, is one column
+// and two rows here. Its legs reach out under the helmet.
 const SPRITE = [
-  '.....wwwwwww.....',
-  '...wwgggggggww...',
-  '..wggggggggghhw..',
-  '.wgggggggggggghw.',
-  '.wgggggggggggggw.',
-  'wgggooooooooogggw',
-  'wgggokkoookkogggw',
-  'wgggokkoookkogggw',
-  '.wwwooooooooowww.',
-  'ooooooooooooooooo',
-  '....ooooooooo....',
-  '....o.o...o.o....',
-  '....o.o...o.o....',
+  '........wwwwwwwwww........',
+  '.....wwwgggggggggghhw.....',
+  '...wwgggggggggggggghgww...',
+  '..wggggooooooooooooghggw..',
+  '.wgggggoooooooooooogggggw.',
+  '.wgggggookooooookoogggggw.',
+  '.wgggggookooooookoogggggw.',
+  '.wgggoooooooooooooooogggw.',
+  '.wgggoooooooooooooooogggw.',
+  '..wggggooooooooooooggggw..',
+  '...wwggooooooooooooggww...',
+  '.....wwwogoggggogowww.....',
+  '........owowwwwowo........',
 ]
 const SPRITE_COLORS: Record<string, number> = {
   w: 0xd8d8d8,
@@ -34,7 +37,7 @@ const SPRITE_COLORS: Record<string, number> = {
 }
 // Inside the helmet: hides the stars behind it but paints nothing.
 const GLASS = -1
-export const SPRITE_W = 17
+export const SPRITE_W = SPRITE[0]!.length
 export const SPRITE_H = SPRITE.length
 
 // Braille dot bits for (x, y) in a cell's 2 x 4 grid.

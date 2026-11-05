@@ -63,7 +63,7 @@ export const register: Register = on => {
     const turnOn = arg === 'on' ? true : arg === 'off' ? false : !wasOn
     await update($, isOn, () => turnOn)
     if (!turnOn) stopAnimation()
-    return { text: turnOn ? 'Clawd가 우주로 떠났습니다. 끄려면 /meditate off' : 'Clawd가 돌아왔습니다.' }
+    return { text: turnOn ? 'Clawd가 우주로 떠났습니다. 끄려면 /meditate off. 띠가 접혀 있으면 프롬프트 위 ▸ plugin panel hidden 줄을 클릭해 펼칩니다.' : 'Clawd가 돌아왔습니다.' }
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
