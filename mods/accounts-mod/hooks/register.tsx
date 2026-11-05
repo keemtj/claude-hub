@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AccountLine, AccountsView, ServiceRow } from '../types'
-import { CATEGORIES, categoryOf, displayName, record, scanTranscript, sortRows, usageText } from './detect'
+import { CATEGORIES, categoryOf, cleanRemote, displayName, record, scanTranscript, sortRows, usageText } from './detect'
 import type { Detected } from './detect'
 
 const PANE = 'accounts-mod'
@@ -123,9 +123,6 @@ const firstLine = (text: string | undefined) =>
     ?.split('\n')
     .map(line => line.replace(/^[>\s]+/, '').trim())
     .find(Boolean)
-
-// A remote URL can carry a token: keep only the host and path.
-const cleanRemote = (url: string) => url.replace(/\/\/[^@/]+@/, '//').replace(/\.git$/, '')
 
 // Codex says who is signed in only through its app-server protocol
 // (account/read). The server stops when its input closes, so the input stays

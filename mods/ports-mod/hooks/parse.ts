@@ -101,8 +101,25 @@ export function parseCwds(text: string): Map<number, string> {
 
 // A long command line, with the home folder shortened and paths trimmed to
 // their last part so the interesting words fit.
+// Flag names whose values are secrets: --token=x and --token x both show ***.
+const SECRET = '(?:token|secret|password|passwd|pwd|api[_-]?key|apikey|auth|credentials?|key)'
+const SECRET_FLAG_EQ = new RegExp(`(--?[\\w-]*${SECRET}[\\w-]*=)\\S+`, 'gi')
+const SECRET_FLAG_SPACE = new RegExp(`(--?[\\w-]*${SECRET}[\\w-]*\\s+)(?!-)\\S+`, 'gi')
+const SECRET_QUERY = new RegExp(`([?&][\\w-]*${SECRET}[\\w-]*=)[^&\\s#]+`, 'gi')
+
+// A process's arguments can carry secrets: hide flag values that name one,
+// a URL's user part and query values that name one.
+export function redactArgs(args: string): string {
+  return args
+    .replace(/(\w+:\/\/)[^@/\s]+@/g, '$1')
+    .replace(SECRET_FLAG_EQ, '$1***')
+    .replace(SECRET_FLAG_SPACE, '$1***')
+    .replace(SECRET_QUERY, '$1***')
+}
+
 export function shortArgs(args: string, home: string | undefined, max = 60): string {
-  let text = home ? args.split(home).join('~') : args
+  const visible = redactArgs(args)
+  let text = home ? visible.split(home).join('~') : visible
   text = text.replace(/(\S*\/)(node_modules\/\.bin\/|bin\/)?([^/\s]+)/g, (_, _dir, _bin, last) => last)
   return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }

@@ -133,7 +133,11 @@ async function pickCat($: EngineInterface, previous: string, mode: CatView['mode
       offset: String(Math.floor(Math.random() * giphyDepth)),
       rating: 'g',
     })
-    const response = await $.http.fetch(`https://api.giphy.com/v1/gifs/search?${query}`)
+    // The key is in the URL, and a rejected request may carry the URL in its
+    // message: whatever went wrong on the way, say only that.
+    const response = await $.http.fetch(`https://api.giphy.com/v1/gifs/search?${query}`).catch(() => {
+      throw new Error('GIPHY 연결 실패')
+    })
     // The key is in the URL, so an error names the status alone.
     if (!response.ok) throw new Error(`GIPHY ${response.status}`)
     type Rendition = { url?: string }

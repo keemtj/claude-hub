@@ -140,3 +140,21 @@ export function categoryOf(id: string): Category {
 export function sortRows<T extends { id: string; weight: number; name: string }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => b.weight - a.weight || a.name.localeCompare(b.name))
 }
+
+// A remote URL can carry a token in its user part, query or fragment: keep
+// only the host and path. An scp-style remote (git@host:path) has no query of
+// its own, so anything from ? or # on is dropped.
+export function cleanRemote(url: string): string {
+  let clean: string
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url)
+      clean = `${parsed.protocol}//${parsed.host}${parsed.pathname}`
+    } catch {
+      clean = url.replace(/\/\/[^@/]+@/, '//').replace(/[?#].*$/, '')
+    }
+  } else {
+    clean = url.replace(/[?#].*$/, '')
+  }
+  return clean.replace(/\.git$/, '')
+}

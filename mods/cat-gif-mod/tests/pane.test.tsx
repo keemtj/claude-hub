@@ -28,7 +28,7 @@ const SAMPLE = new Uint8Array([
 declare const setTimeout: (run: () => void, ms: number) => unknown
 
 // The test engine fills in the origin and presentation of a typed command.
-const devcat = { command: 'cat-gif-mod', args: '' } as CommandRunInput
+const openCat = { command: 'cat-gif-mod', args: '' } as CommandRunInput
 
 function engine(on: On, curlExit: number, urls: string[], terminal = 'ghostty') {
   on('command.register', () => ({ value: { command: 'cat-gif-mod' } }))
@@ -53,7 +53,7 @@ test('/cat-gif-mod fetches a captioned cat and draws it', async ($, on) => {
   const urls: string[] = []
   engine(on, 0, urls)
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  const ran = await $.command.run(devcat)
+  const ran = await $.command.run(openCat)
   expect(ran.text).toContain('열었습니다')
 
   let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
@@ -72,7 +72,7 @@ test('/cat-gif-mod fetches a captioned cat and draws it', async ($, on) => {
 test('a cat that cannot be fetched says so', async ($, on) => {
   engine(on, 22, [])
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  await $.command.run(devcat)
+  await $.command.run(openCat)
 
   let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await settle(async () => {
@@ -94,7 +94,7 @@ test('in Orca the cat is drawn in cells, plain, with the line under it', async (
   const urls: string[] = []
   engine(on, 0, urls, 'Orca')
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  await $.command.run(devcat)
+  await $.command.run(openCat)
 
   let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await settle(async () => {
@@ -131,7 +131,7 @@ test('with a GIPHY key the cat comes from a GIPHY search, titled, as a picture e
     return { value: { status: 200, ok: true, headers: {}, text: JSON.stringify(GIPHY) } }
   })
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  await $.command.run(devcat)
+  await $.command.run(openCat)
 
   let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await settle(async () => {
@@ -155,7 +155,7 @@ test('a GIPHY error never shows the key', { options: { giphyApiKey: 'k-123' } },
   engine(on, 0, [], 'Orca')
   on('http.fetch', () => ({ value: { status: 403, ok: false, headers: {}, text: '{"message":"Invalid API key"}' } }))
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  await $.command.run(devcat)
+  await $.command.run(openCat)
 
   let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await settle(async () => {
@@ -209,7 +209,7 @@ test('an offset past the results learns the real count and tries within it', { o
     return { value: { status: 200, ok: true, headers: {}, text: JSON.stringify(body) } }
   })
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  await $.command.run(devcat)
+  await $.command.run(openCat)
   let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await settle(async () => {
     await ui.unmount()
@@ -219,5 +219,26 @@ test('an offset past the results learns the real count and tries within it', { o
   expect(await ui.find({ type: 'Image' })).toBeTruthy()
   expect(offsets.length).toBe(2)
   expect(offsets[1]).toBeLessThan(60)
+  await ui.unmount()
+})
+
+test('a GIPHY request that fails on the way never shows the key', { options: { giphyApiKey: 'synthetic-test-key' } }, async ($, on) => {
+  engine(on, 0, [], 'Orca')
+  // The host may reject with the URL, key and all, in its message.
+  on('http.fetch', (_, e) => {
+    throw new Error(`fetch failed: ${e.url}`)
+  })
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.command.run(openCat)
+
+  let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await settle(async () => {
+    await ui.unmount()
+    ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+    return ui.find({ type: 'Text', text: /못 데려왔습니다/ })
+  })
+  const error = (await ui.find({ type: 'Text', text: /못 데려왔습니다/ }))?.text ?? ''
+  expect(error).toContain('GIPHY 연결 실패')
+  expect(error).not.toContain('synthetic-test-key')
   await ui.unmount()
 })
