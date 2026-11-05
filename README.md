@@ -6,7 +6,7 @@ keemtj가 만든 Claude Code 자산 모음(허브)이다. 폴더 하나가 독�
 
 ```sh
 /plugin marketplace add keemtj/claude-hub
-/plugin install cat-mod@claude-hub
+/plugin install cat-gif-mod@claude-hub
 ```
 
 이 저장소를 내려받아 개발할 때는 폴더를 마켓플레이스로 추가한다. 설치본이 폴더를 직접 읽으므로 고친 뒤 `/reload-plugins`만 하면 된다.
@@ -24,7 +24,7 @@ claude plugin marketplace add <이 폴더>
 | `accounts-mod` | 세션이 쓰는 서비스와 연결된 계정, 활성 여부를 옆 패널에 보여 준다 |
 | `ports-mod` | 세션이 띄운 프로세스가 열어 둔 포트를 옆 패널에 보여 준다 |
 | `inventory-mod` | 플러그인, 스킬, MCP 서버를 한 패널에서 보고 켜고 끈다 |
-| `cat-mod` | 옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다(GIPHY 키는 선택) |
+| `cat-gif-mod` | 옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다(GIPHY 키는 선택) |
 
 슬래시 명령은 플러그인 이름과 같다. 자동완성이 부분 일치라서 `/mod`만 쳐도 모두 뜬다.
 
