@@ -19,10 +19,10 @@ In Claude Code:
 
 ```sh
 /plugin marketplace add keemtj/claude-hub
-/plugin install cat-gif-mod@claude-hub
+/plugin install gif-mod@claude-hub
 ```
 
-Then run the asset's command, here `/cat-gif-mod`. Add any other asset the same way with `/plugin install <name>@claude-hub`.
+Then run the asset's command, here `/gif-mod`. Add any other asset the same way with `/plugin install <name>@claude-hub`.
 
 ## Contents
 
@@ -98,15 +98,15 @@ Everything installed, in one place. Three tabs list plugins, skills and MCP serv
 - **Command:** `/inventory-mod` opens it, `/inventory-mod close` closes it.
 - [Details](mods/inventory-mod/README.md)
 
-### cat-gif-mod
+### gif-mod
 
-<!-- preview: mods/cat-gif-mod/media/preview.gif -->
+<!-- preview: mods/gif-mod/media/preview.gif -->
 
-A cat GIF beside your work, and another one on refresh. With your own GIPHY API key it picks from GIPHY's cats; without one it shows cats from cataas.com with a developer line on top.
+A GIF beside your work, and another one on refresh. It starts with cats; with your own GIPHY API key you can search for anything else, and the last search is kept for next time. Without a key it shows cats from cataas.com with a developer line on top.
 
-- **Command:** `/cat-gif-mod` opens it, `/cat-gif-mod close` closes it.
-- **Optional setting:** a GIPHY API key, entered with `/plugin configure cat-gif-mod@claude-hub` and kept in your keychain.
-- [Details and third-party terms](mods/cat-gif-mod/README.md)
+- **Command:** `/gif-mod` opens it, `/gif-mod <search>` searches (or type in the pane's search field), `/gif-mod close` closes it.
+- **Optional setting:** a GIPHY API key, entered with `/plugin configure gif-mod@claude-hub` and kept in your keychain.
+- [Details and third-party terms](mods/gif-mod/README.md)
 
 ## Managing installed assets
 

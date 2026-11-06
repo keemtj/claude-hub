@@ -1,5 +1,7 @@
 export type CatView = {
   status: 'empty' | 'loading' | 'ready' | 'error'
+  // What GIPHY is searched for: 'cat' unless the person asked for another.
+  term: string
   // The developer line on the cat now on screen.
   phrase: string
   // True when cataas drew the line into the GIF; else it is written under it.
@@ -15,7 +17,7 @@ export type CatView = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'cat-gif-mod': {
+    'gif-mod': {
       view: Shaped<CatView>
     }
   }
