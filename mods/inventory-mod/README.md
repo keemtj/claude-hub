@@ -1,14 +1,14 @@
 # inventory-mod
 
-**English** | [한국어](README.ko.md)
+**한국어** | [English](README.en.md)
 
-`/inventory-mod` opens a side pane with three tabs showing what is installed globally, and turns things on or off.
+`/inventory-mod`로 옆 패널을 열면 탭 세 개로 전역에 설치된 것을 보여 주고 켜고 끈다.
 
-| Tab | Shows | What a toggle affects |
+| 탭 | 보여 주는 것 | 토글 범위 |
 |---|---|---|
-| Plugins | Plugins and mods from `claude plugin list`, and this session's mod folder (`~/.claude/dev-mods/<session>`) | All sessions (`claude plugin enable/disable`; this session after `/reload-plugins`). The inventory itself and the session's mod folder are locked |
-| Skills | Personal skills in `~/.claude/skills`, and the skill count per plugin | This session only (Skill tool calls are refused, and `/name` says it is off). Skills linked from an external install are locked |
-| MCP | Servers from `claude mcp list` and their connection state | This session only (calls to `mcp__<server>__*` tools are refused) |
+| 플러그인 | `claude plugin list`의 플러그인·mod, 이 세션의 mod 폴더(`~/.claude/dev-mods/<세션>`) | 모든 세션 (`claude plugin enable/disable`, 이 세션은 `/reload-plugins` 후 반영). 인벤토리 자신과 세션 mod 폴더는 잠김 |
+| 스킬 | `~/.claude/skills`의 개인 스킬, 플러그인별 스킬 개수 | 이 세션만 (Skill 도구 호출 거절, `/이름` 실행 시 꺼짐 안내). 외부 설치 링크 스킬은 잠김 |
+| MCP | `claude mcp list`의 서버와 연결 상태 | 이 세션만 (`mcp__<서버>__*` 도구 호출 거절) |
 
 ```sh
 claude plugin install inventory-mod@claude-hub
