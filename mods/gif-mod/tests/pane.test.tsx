@@ -4,9 +4,9 @@ import { expect, test } from 'claude-code/testing'
 import { PHRASES, pickPhrase } from '../hooks/phrases'
 
 const PANE = {
-  plugin: 'cat-gif-mod',
+  plugin: 'gif-mod',
   component: 'Pane',
-  requestId: 'cat-gif-mod',
+  requestId: 'gif-mod',
   props: {
     title: 'Cat',
     isFocused: false,
@@ -28,16 +28,16 @@ const SAMPLE = new Uint8Array([
 declare const setTimeout: (run: () => void, ms: number) => unknown
 
 // The test engine fills in the origin and presentation of a typed command.
-const openCat = { command: 'cat-gif-mod', args: '' } as CommandRunInput
+const openCat = { command: 'gif-mod', args: '' } as CommandRunInput
 
 function engine(on: On, curlExit: number, urls: string[], terminal = 'ghostty') {
-  on('command.register', () => ({ value: { command: 'cat-gif-mod' } }))
+  on('command.register', () => ({ value: { command: 'gif-mod' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('process.run', (_, e) => {
     if (e.argv[0] === 'curl') urls.push(e.argv[e.argv.length - 1]!)
     const exitCode = e.argv[0] === 'curl' ? curlExit : 0
-    return { value: { exitCode, stdout: e.argv[0] === 'mktemp' ? '/tmp/cat-gif-mod.x\n' : e.argv[0] === 'sh' ? terminal : '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    return { value: { exitCode, stdout: e.argv[0] === 'mktemp' ? '/tmp/gif-mod.x\n' : e.argv[0] === 'sh' ? terminal : '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('fs.read', () => ({ value: { base64: SAMPLE.toBase64() } }))
 }
@@ -49,7 +49,7 @@ async function settle(find: () => Promise<unknown>) {
   }
 }
 
-test('/cat-gif-mod fetches a captioned cat and draws it', async ($, on) => {
+test('/gif-mod fetches a captioned cat and draws it', async ($, on) => {
   const urls: string[] = []
   engine(on, 0, urls)
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })

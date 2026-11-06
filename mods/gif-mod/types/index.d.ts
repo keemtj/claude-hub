@@ -15,7 +15,7 @@ export type CatView = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'cat-gif-mod': {
+    'gif-mod': {
       view: Shaped<CatView>
     }
   }

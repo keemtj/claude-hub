@@ -6,7 +6,7 @@ import { decodeGif, fitPicture, frameDelay, halfBlockCells, imageSize, scaleFram
 import type { Gif } from './gif'
 import { pickPhrase } from './phrases'
 
-const PANE = 'cat-gif-mod'
+const PANE = 'gif-mod'
 const TITLE = 'Cat'
 const PICTURE = 'cat'
 const TICK_MS = 40
@@ -27,7 +27,7 @@ const INITIAL: CatView = {
   mode: 'image',
   generation: 0,
 }
-const view = atom({ plugin: 'cat-gif-mod', key: 'view' } as const, INITIAL, { shape: 'cat-2' })
+const view = atom({ plugin: 'gif-mod', key: 'view' } as const, INITIAL, { shape: 'cat-2' })
 
 // The cat on screen. Module state, so a reload fetches a new one.
 type Playing = {
@@ -168,7 +168,7 @@ async function pickCat($: EngineInterface, previous: string, mode: CatView['mode
 }
 
 async function fetchGif($: EngineInterface, url: string): Promise<Gif> {
-  const path = (await $.process.run(['mktemp', '-t', 'cat-gif-mod'])).stdout.trim()
+  const path = (await $.process.run(['mktemp', '-t', 'gif-mod'])).stdout.trim()
   try {
     const got = await $.process.run(
       ['curl', '-sfL', '-m', '30', '--max-filesize', String(MAX_BYTES), '-o', path, url],
@@ -255,14 +255,14 @@ export const register: Register = (on, options) => {
 
   on('session.start', async ($, e, next) => {
     await $.command.register({
-      name: 'cat-gif-mod',
+      name: 'gif-mod',
       description: '옆 패널에 고양이 GIF를 보여 준다',
       argumentHint: '[close]',
     })
     return next(e)
   })
 
-  on('command.run', { command: 'cat-gif-mod' }, async ($, e) => {
+  on('command.run', { command: 'gif-mod' }, async ($, e) => {
     if (e.args.trim() === 'close') {
       await $.ui.close({ id: PANE })
       return { text: '고양이 패널을 닫았습니다.' }

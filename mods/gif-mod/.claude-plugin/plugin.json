@@ -1,7 +1,7 @@
 {
-  "name": "cat-gif-mod",
-  "version": "0.3.0",
-  "description": "옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다 (/cat-gif-mod)",
+  "name": "gif-mod",
+  "version": "0.4.0",
+  "description": "옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다 (/gif-mod)",
   "author": {
     "name": "keemtj"
   },

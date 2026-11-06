@@ -38,9 +38,9 @@
       "category": "mod"
     },
     {
-      "name": "cat-gif-mod",
-      "source": "./mods/cat-gif-mod",
-      "description": "옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다 (/cat-gif-mod)",
+      "name": "gif-mod",
+      "source": "./mods/gif-mod",
+      "description": "옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다 (/gif-mod)",
       "category": "mod"
     }
   ]
