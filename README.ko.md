@@ -102,9 +102,9 @@ mod는 Claude Code 자체의 그리기 엔진으로 화면을 그리므로 모�
 
 <!-- preview: mods/gif-mod/media/preview.gif -->
 
-작업 옆에 고양이 GIF를 띄우고, 새로고침하면 다른 고양이로 바꿉니다. 내 GIPHY API 키가 있으면 GIPHY의 고양이 중에서 고르고, 없으면 cataas.com 고양이에 개발 문구를 얹어 보여 줍니다.
+작업 옆에 GIF를 띄우고, 새로고침하면 다른 GIF로 바꿉니다. 처음에는 고양이를 보여 주고, 내 GIPHY API 키가 있으면 원하는 검색어로 찾을 수 있습니다. 마지막 검색어는 다음에도 이어서 씁니다. 키가 없으면 cataas.com 고양이에 개발 문구를 얹어 보여 줍니다.
 
-- **명령:** `/gif-mod`로 열고 `/gif-mod close`로 닫습니다.
+- **명령:** `/gif-mod`로 열고, `/gif-mod <검색어>`로 검색하고(패널의 검색 입력란에 써도 됩니다), `/gif-mod close`로 닫습니다.
 - **선택 설정:** GIPHY API 키. `/plugin configure gif-mod@claude-hub`로 넣으면 키체인에 저장됩니다.
 - [자세히와 외부 서비스 약관](mods/gif-mod/README.ko.md)
 

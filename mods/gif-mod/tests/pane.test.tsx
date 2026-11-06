@@ -1,5 +1,6 @@
 import type { CommandRunInput, On } from 'claude-code'
 import { expect, test } from 'claude-code/testing'
+import type { TestBody } from 'claude-code/testing'
 
 import { PHRASES, pickPhrase } from '../hooks/phrases'
 
@@ -30,7 +31,15 @@ declare const setTimeout: (run: () => void, ms: number) => unknown
 // The test engine fills in the origin and presentation of a typed command.
 const openCat = { command: 'gif-mod', args: '' } as CommandRunInput
 
-function engine(on: On, curlExit: number, urls: string[], terminal = 'ghostty') {
+// What $.store holds across sessions, for the test that runs it.
+type Store = Map<string, unknown>
+
+function engine(on: On, curlExit: number, urls: string[], terminal = 'ghostty', store: Store = new Map()) {
+  on('store.get', (_, e) => ({ value: store.get(e.key) }))
+  on('store.set', (_, e) => {
+    store.set(e.key, e.value)
+    return { value: undefined }
+  })
   on('command.register', () => ({ value: { command: 'gif-mod' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -78,9 +87,9 @@ test('a cat that cannot be fetched says so', async ($, on) => {
   await settle(async () => {
     await ui.unmount()
     ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-    return ui.find({ type: 'Text', text: /못 데려왔습니다/ })
+    return ui.find({ type: 'Text', text: /못 가져왔습니다/ })
   })
-  expect((await ui.find({ type: 'Text', text: /못 데려왔습니다/ }))?.text).toContain('curl 22')
+  expect((await ui.find({ type: 'Text', text: /못 가져왔습니다/ }))?.text).toContain('curl 22')
   await ui.unmount()
 })
 
@@ -161,9 +170,9 @@ test('a GIPHY error never shows the key', { options: { giphyApiKey: 'k-123' } },
   await settle(async () => {
     await ui.unmount()
     ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-    return ui.find({ type: 'Text', text: /못 데려왔습니다/ })
+    return ui.find({ type: 'Text', text: /못 가져왔습니다/ })
   })
-  const error = (await ui.find({ type: 'Text', text: /못 데려왔습니다/ }))?.text ?? ''
+  const error = (await ui.find({ type: 'Text', text: /못 가져왔습니다/ }))?.text ?? ''
   expect(error).toContain('GIPHY 403')
   expect(error).not.toContain('k-123')
   await ui.unmount()
@@ -235,10 +244,106 @@ test('a GIPHY request that fails on the way never shows the key', { options: { g
   await settle(async () => {
     await ui.unmount()
     ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-    return ui.find({ type: 'Text', text: /못 데려왔습니다/ })
+    return ui.find({ type: 'Text', text: /못 가져왔습니다/ })
   })
-  const error = (await ui.find({ type: 'Text', text: /못 데려왔습니다/ }))?.text ?? ''
+  const error = (await ui.find({ type: 'Text', text: /못 가져왔습니다/ }))?.text ?? ''
   expect(error).toContain('GIPHY 연결 실패')
   expect(error).not.toContain('synthetic-test-key')
+  await ui.unmount()
+})
+
+function giphy(on: On, searches: string[]) {
+  on('http.fetch', (_, e) => {
+    searches.push(e.url)
+    return { value: { status: 200, ok: true, headers: {}, text: JSON.stringify(GIPHY) } }
+  })
+}
+
+const query = (url: string) => new URL(url).searchParams
+
+async function mounted($: Parameters<TestBody>[0], type: 'Image' | 'Raster' | 'Text', text?: RegExp) {
+  let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  await settle(async () => {
+    await ui.unmount()
+    ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+    return ui.find(text ? { type, text } : { type })
+  })
+  return ui
+}
+
+const search = (args: string) => ({ ...openCat, args }) as CommandRunInput
+
+test('/gif-mod <term> searches GIPHY for it and remembers it', { options: { giphyApiKey: 'k-123' } }, async ($, on) => {
+  const searches: string[] = []
+  const store: Store = new Map()
+  engine(on, 0, [], 'ghostty', store)
+  giphy(on, searches)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.command.run(search('dog'))
+  const ui = await mounted($, 'Image')
+  expect(query(searches.at(-1)!).get('q')).toBe('dog')
+  expect(store.get('term')).toBe('dog')
+  expect((await ui.find({ type: 'Text', text: /dog\.gif/ }))?.text).toBeTruthy()
+  await ui.unmount()
+})
+
+test('the search field looks up what is typed', { options: { giphyApiKey: 'k-123' } }, async ($, on) => {
+  const searches: string[] = []
+  engine(on, 0, [])
+  giphy(on, searches)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.command.run(openCat)
+  const ui = await mounted($, 'Image')
+  expect(query(searches[0]!).get('q')).toBe('cat')
+  await ui.input({ key: 'search', text: 'party parrot' })
+  await settle(async () => searches.length > 1)
+  expect(query(searches.at(-1)!).get('q')).toBe('party parrot')
+  await ui.unmount()
+})
+
+test('a Korean term asks GIPHY in Korean', { options: { giphyApiKey: 'k-123' } }, async ($, on) => {
+  const searches: string[] = []
+  engine(on, 0, [])
+  giphy(on, searches)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.command.run(search('고양이'))
+  await settle(async () => searches.length > 0)
+  expect(query(searches.at(-1)!).get('q')).toBe('고양이')
+  expect(query(searches.at(-1)!).get('lang')).toBe('ko')
+})
+
+test('the term from an earlier session comes back', { options: { giphyApiKey: 'k-123' } }, async ($, on) => {
+  const searches: string[] = []
+  engine(on, 0, [], 'ghostty', new Map([['term', 'otter']]))
+  giphy(on, searches)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.command.run(openCat)
+  await settle(async () => searches.length > 0)
+  expect(query(searches[0]!).get('q')).toBe('otter')
+})
+
+test('an empty search goes back to cats', { options: { giphyApiKey: 'k-123' } }, async ($, on) => {
+  const searches: string[] = []
+  const store: Store = new Map([['term', 'otter']])
+  engine(on, 0, [], 'ghostty', store)
+  giphy(on, searches)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.command.run(openCat)
+  const ui = await mounted($, 'Image')
+  await ui.input({ key: 'search', text: '   ' })
+  await settle(async () => searches.length > 1)
+  expect(query(searches.at(-1)!).get('q')).toBe('cat')
+  expect(store.get('term')).toBe('cat')
+  await ui.unmount()
+})
+
+test('without a GIPHY key a search says it needs one and shows cats', async ($, on) => {
+  const urls: string[] = []
+  engine(on, 0, urls)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await $.command.run(search('dog'))
+  const ui = await mounted($, 'Text', /GIPHY API 키/)
+  expect((await ui.find({ type: 'Text', text: /GIPHY API 키/ }))?.text).toBeTruthy()
+  expect(urls.at(-1)).toContain('https://cataas.com/cat/gif')
   await ui.unmount()
 })

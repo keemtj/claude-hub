@@ -102,9 +102,9 @@ Everything installed, in one place. Three tabs list plugins, skills and MCP serv
 
 <!-- preview: mods/gif-mod/media/preview.gif -->
 
-A cat GIF beside your work, and another one on refresh. With your own GIPHY API key it picks from GIPHY's cats; without one it shows cats from cataas.com with a developer line on top.
+A GIF beside your work, and another one on refresh. It starts with cats; with your own GIPHY API key you can search for anything else, and the last search is kept for next time. Without a key it shows cats from cataas.com with a developer line on top.
 
-- **Command:** `/gif-mod` opens it, `/gif-mod close` closes it.
+- **Command:** `/gif-mod` opens it, `/gif-mod <search>` searches (or type in the pane's search field), `/gif-mod close` closes it.
 - **Optional setting:** a GIPHY API key, entered with `/plugin configure gif-mod@claude-hub` and kept in your keychain.
 - [Details and third-party terms](mods/gif-mod/README.md)
 

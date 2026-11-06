@@ -15,19 +15,22 @@ const MAX_BYTES = 4_000_000
 const TRIES = 3
 // Any cat: "cat" has tens of thousands of results, so a cat picked from the
 // first thousand rarely repeats; further down they get poor.
-const GIPHY_TERM = 'cat'
+// The search when the person has not asked for another.
+const DEFAULT_TERM = 'cat'
+const TERM_KEY = 'term'
 const GIPHY_DEPTH = 1000
 // Change the tag when CatView changes: it declines what an earlier version
 // stored, which outlives a reload.
 const INITIAL: CatView = {
   status: 'empty',
+  term: DEFAULT_TERM,
   phrase: '',
   isCaptionOnPicture: false,
   isFromGiphy: false,
   mode: 'image',
   generation: 0,
 }
-const view = atom({ plugin: 'gif-mod', key: 'view' } as const, INITIAL, { shape: 'cat-2' })
+const view = atom({ plugin: 'gif-mod', key: 'view' } as const, INITIAL, { shape: 'gif-1' })
 
 // The cat on screen. Module state, so a reload fetches a new one.
 type Playing = {
@@ -124,11 +127,13 @@ type Pick = { url: string; caption: string; isCaptionOnPicture: boolean }
 
 // A cat: from a GIPHY search when the person gave a key, else from cataas
 // with a developer line of ours.
-async function pickCat($: EngineInterface, previous: string, mode: CatView['mode']): Promise<Pick> {
+async function pickCat($: EngineInterface, term: string, previous: string, mode: CatView['mode']): Promise<Pick> {
   if (giphyKey) {
     const query = new URLSearchParams({
       api_key: giphyKey,
-      q: GIPHY_TERM,
+      q: term,
+      // GIPHY reads a Korean term better when told it is Korean.
+      lang: /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(term) ? 'ko' : 'en',
       limit: '1',
       offset: String(Math.floor(Math.random() * giphyDepth)),
       rating: 'g',
@@ -153,7 +158,7 @@ async function pickCat($: EngineInterface, previous: string, mode: CatView['mode
     const rendition = found?.images?.fixed_width_small ?? found?.images?.fixed_width
     if (!rendition?.url) throw new Error('GIPHY 검색 결과가 없습니다')
     const caption = (found?.title ?? '').replace(/\s*GIF\b.*$/i, '').trim()
-    return { url: rendition.url, caption: caption || 'cat', isCaptionOnPicture: false }
+    return { url: rendition.url, caption: caption || term, isCaptionOnPicture: false }
   }
   const phrase = pickPhrase(previous)
   // In cells the words would be a smudge, so that cat comes plain and the
@@ -201,6 +206,15 @@ async function modeFor($: EngineInterface, stored: CatView['mode']): Promise<Cat
   return stored
 }
 
+// A new search: an empty one goes back to cats. It is kept across sessions,
+// and the result count learnt for the last term no longer holds.
+async function setTerm($: EngineInterface, raw: string) {
+  const term = raw.trim() || DEFAULT_TERM
+  giphyDepth = GIPHY_DEPTH
+  await update($, view, (v): CatView => ({ ...v, term }))
+  await $.store.set(TERM_KEY, term).catch(() => undefined)
+}
+
 async function loadCat($: EngineInterface) {
   const token = ++loadToken
   const stored = await read($, view)
@@ -210,7 +224,7 @@ async function loadCat($: EngineInterface) {
   let lastError = ''
   for (let attempt = 0; attempt < TRIES; attempt += 1) {
     try {
-      const cat = await pickCat($, current.phrase, current.mode)
+      const cat = await pickCat($, current.term, current.phrase, current.mode)
       const gif = await fetchGif($, cat.url)
       if (token !== loadToken) return
       const size = imageSize(gif.width, gif.height)
@@ -256,23 +270,32 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'gif-mod',
-      description: '옆 패널에 고양이 GIF를 보여 준다',
-      argumentHint: '[close]',
+      description: '옆 패널에 GIF를 보여 준다 (검색어를 붙이면 그것으로 찾는다)',
+      argumentHint: '[검색어|close]',
     })
+    // The last search of an earlier session.
+    const stored = await $.store.get(TERM_KEY).catch(() => undefined)
+    if (typeof stored === 'string' && stored.trim()) {
+      const term = stored.trim()
+      await update($, view, (v): CatView => ({ ...v, term }))
+    }
     return next(e)
   })
 
   on('command.run', { command: 'gif-mod' }, async ($, e) => {
-    if (e.args.trim() === 'close') {
+    const args = e.args.trim()
+    if (args === 'close') {
       await $.ui.close({ id: PANE })
-      return { text: '고양이 패널을 닫았습니다.' }
+      return { text: 'GIF 패널을 닫았습니다.' }
     }
+    // Anything else after the command is a search.
+    if (args) await setTerm($, args)
     const opened = await $.ui.open({ id: PANE, title: TITLE, backgroundColor: 'transparent' })
     const current = await read($, view)
     const mode = await modeFor($, current.mode)
-    if (mode !== current.mode || !playing) void loadCat($)
+    if (args || mode !== current.mode || !playing) void loadCat($)
     return {
-      text: opened.isPlaced ? '고양이 패널을 열었습니다.' : '패널을 놓을 자리가 없습니다. 터미널을 넓혀 주세요.',
+      text: opened.isPlaced ? 'GIF 패널을 열었습니다.' : '패널을 놓을 자리가 없습니다. 터미널을 넓혀 주세요.',
     }
   })
 
@@ -323,19 +346,32 @@ export const register: Register = (on, options) => {
 
     const status =
       current.status === 'loading'
-        ? '고양이를 데려오는 중…'
+        ? 'GIF를 가져오는 중…'
         : current.status === 'error'
-          ? `고양이를 못 데려왔습니다: ${current.error ?? ''}`
+          ? `GIF를 못 가져왔습니다: ${current.error ?? ''}`
           : undefined
+    // cataas has cats alone: another search needs GIPHY.
+    const note =
+      !giphyKey && current.term !== DEFAULT_TERM ? '검색은 GIPHY API 키가 있어야 합니다. 고양이를 보여 줍니다.' : undefined
+    const searchField =
+      'Input' in elements ? (
+        <elements.Input
+          key="search"
+          placeholder={`검색어 (지금: ${current.term}, 비우면 ${DEFAULT_TERM})`}
+          onSubmit={value => void setTerm($, value).then(() => loadCat($))}
+        />
+      ) : null
 
     return (
       <Box flexDirection="column" marginTop={1} marginLeft={1}>
         <Box flexDirection="row" gap={1}>
-          <Text bold color="claude">고양이.gif</Text>
+          <Text bold color="claude">{current.term}.gif</Text>
           <Box flexGrow={1} />
           <Button key="refresh" onPress={() => void loadCat($)}>새로고침</Button>
           <Button key="close" role="dismiss" onPress={() => void $.ui.close({ id: PANE })}>닫기</Button>
         </Box>
+        {searchField ? <Box marginTop={1}>{searchField}</Box> : null}
+        {note ? <Text color="yellow">{note}</Text> : null}
         {status ? <Text dimColor>{'\n'}{status}</Text> : null}
         {picture ? <Box marginTop={1}>{picture}</Box> : null}
         {cat && !current.isCaptionOnPicture ? <Text dimColor>{'\n'}“{current.phrase}”</Text> : null}

@@ -40,7 +40,7 @@
     {
       "name": "gif-mod",
       "source": "./mods/gif-mod",
-      "description": "옆 패널에 고양이 GIF를 보여 주고, 새로고침하면 바꾼다 (/gif-mod)",
+      "description": "옆 패널에 GIF를 보여 준다. 기본은 고양이, 검색어로 다른 GIF도 찾는다 (/gif-mod)",
       "category": "mod"
     }
   ]
