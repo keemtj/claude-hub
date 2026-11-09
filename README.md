@@ -28,6 +28,7 @@ Claude Code에서 다음을 입력합니다.
 
 - [허브에 있는 것](#허브에-있는-것)
 - [Mod](#mod)
+- [Hook, Skill, MCP, Agent, Plugin](#hook-skill-mcp-agent-plugin)
 - [설치한 자산 관리](#설치한-자산-관리)
 - [개발과 기여](#개발과-기여)
 - [라이선스](#라이선스)
@@ -44,11 +45,11 @@ Claude Code에서 다음을 입력합니다.
 | MCP | `-mcp` | MCP 서버를 통해 Claude를 외부 도구나 서비스와 연결합니다 | 설치하면 Claude가 그 도구를 쓸 수 있습니다 |
 | Agent | `-agent` | 역할과 도구가 정해진 서브에이전트입니다 | Claude가 일을 맡기거나, 직접 요청합니다 |
 
-슬래시 명령 자동완성은 이름의 어느 부분이든 맞춰 찾습니다. 그래서 `/mod`만 입력해도 설치한 mod가 모두 뜹니다. 지금은 mod만 있고, 다른 종류도 차례로 더할 예정입니다.
+슬래시 명령 자동완성은 이름의 어느 부분이든 맞춰 찾습니다. 그래서 `/mod`만 입력해도 설치한 mod가 모두 뜹니다. 종류마다 폴더가 있고, 각 폴더의 README에 그 종류를 만드는 방법(구조, 꼭 있어야 하는 파일, 확인 방법)이 있습니다. 지금은 mod만 있고, 다른 종류도 차례로 더할 예정입니다.
 
 ## Mod
 
-mod는 Claude Code 자체의 그리기 엔진으로 화면을 그리므로 모델 토큰을 쓰지 않습니다.
+mod는 Claude Code 자체의 그리기 엔진으로 화면을 그리므로 모델 토큰을 쓰지 않습니다. 만드는 방법은 [mods/README.md](mods/README.md)에 있습니다.
 
 ### workflow-mod
 
@@ -116,6 +117,10 @@ mod는 Claude Code 자체의 그리기 엔진으로 화면을 그리므로 모�
 
 - **명령:** `/preview-mod`로 열고 `/preview-mod close`로 닫습니다. 무언가를 붙이면 알아서 열립니다.
 - [자세히](mods/preview-mod/README.md)
+
+## Hook, Skill, MCP, Agent, Plugin
+
+아직 없습니다. 만드는 방법은 폴더마다 있습니다: [hooks](hooks/README.md), [skills](skills/README.md), [mcp](mcp/README.md), [agents](agents/README.md), [plugins](plugins/README.md).
 
 ## 설치한 자산 관리
 
