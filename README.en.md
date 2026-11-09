@@ -1,4 +1,6 @@
-<h1 align="center">claude-hub</h1>
+<p align="center">
+  <img src="docs/assets/hub-banner.png" alt="keemtj/claude-hub: My personal Claude Code toolkit" width="100%">
+</p>
 
 <p align="center">
   A personal hub of Claude Code assets — mods, hooks, skills, MCP connections and agents.<br>

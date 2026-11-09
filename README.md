@@ -1,4 +1,6 @@
-<h1 align="center">claude-hub</h1>
+<p align="center">
+  <img src="docs/assets/hub-banner.png" alt="keemtj/claude-hub: My personal Claude Code toolkit" width="100%">
+</p>
 
 <p align="center">
   Claude Code 자산(mod, hook, skill, MCP 연결, agent)을 모아 둔 개인 허브입니다.<br>
