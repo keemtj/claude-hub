@@ -1,4 +1,6 @@
-<h1 align="center">claude-hub</h1>
+<p align="center">
+  <img src="docs/assets/hub-banner.png" alt="keemtj/claude-hub: My personal Claude Code toolkit" width="100%">
+</p>
 
 <p align="center">
   A personal hub of Claude Code assets — mods, hooks, skills, MCP connections and agents.<br>
@@ -28,6 +30,7 @@ Then run the asset's command, here `/gif-mod`. Add any other asset the same way 
 
 - [What's in the hub](#whats-in-the-hub)
 - [Mods](#mods)
+- [Hooks, skills, MCP, agents, plugins](#hooks-skills-mcp-agents-plugins)
 - [Managing installed assets](#managing-installed-assets)
 - [Building and contributing](#building-and-contributing)
 - [License](#license)
@@ -44,11 +47,11 @@ Each folder is a standalone Claude Code plugin. A name ends with its kind, so yo
 | MCP | `-mcp` | Connects Claude to an external tool or service through an MCP server | Its tools appear to Claude once installed |
 | Agent | `-agent` | A subagent with its own role and tools | Claude delegates to it, or you ask for it |
 
-Slash command completion matches anywhere in a name, so typing `/mod` lists every mod you have installed. The hub has mods only for now; the other kinds are on the way.
+Slash command completion matches anywhere in a name, so typing `/mod` lists every mod you have installed. Each kind has its own folder, whose README says how to make one (layout, required files, checks). The hub has mods only for now; the other kinds are on the way.
 
 ## Mods
 
-Mods draw with Claude Code's own rendering engine and use no model tokens.
+Mods draw with Claude Code's own rendering engine and use no model tokens. How to make one: [mods/README.en.md](mods/README.en.md).
 
 ### workflow-mod
 
@@ -116,6 +119,10 @@ See what you pasted, beside the prompt. The pictures folded into `[Image #N]` an
 
 - **Command:** `/preview-mod` opens it, `/preview-mod close` closes it. It opens on its own when you paste something.
 - [Details](mods/preview-mod/README.en.md)
+
+## Hooks, skills, MCP, agents, plugins
+
+None yet. Each folder says how to make one: [hooks](hooks/README.en.md), [skills](skills/README.en.md), [mcp](mcp/README.en.md), [agents](agents/README.en.md), [plugins](plugins/README.en.md).
 
 ## Managing installed assets
 
