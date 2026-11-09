@@ -3,9 +3,9 @@ import { expect, test } from 'claude-code/testing'
 import type { TestBody } from 'claude-code/testing'
 
 const PANE = {
-  plugin: 'image-preview-mod',
+  plugin: 'preview-mod',
   component: 'Pane',
-  requestId: 'image-preview-mod',
+  requestId: 'preview-mod',
   props: {
     title: 'Images',
     isFocused: false,
@@ -27,6 +27,10 @@ type Host = {
   looks: Map<number, number>
   sips: string[][]
   blitDeny?: string
+  // What the clipboard holds when the placeholder appears.
+  clipboard?: string
+  // The BMP sips leaves, when not the small default.
+  bmp?: string
 }
 
 const host = (files: [number, string, number?][] = [], blitDeny?: string): Host => ({
@@ -38,7 +42,7 @@ const host = (files: [number, string, number?][] = [], blitDeny?: string): Host 
 })
 
 function engine(on: On, h: Host) {
-  on('command.register', () => ({ value: { command: 'image-preview-mod' } }))
+  on('command.register', () => ({ value: { command: 'preview-mod' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('session.id', () => ({ value: 'SID' }))
   on('clock.sleep', () => ({ value: undefined }))
@@ -52,7 +56,7 @@ function engine(on: On, h: Host) {
       value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
     })
     const [cmd] = e.argv
-    if (cmd === 'mktemp') return out(0, '/tmp/image-preview-mod.x\n')
+    if (cmd === 'mktemp') return out(0, '/tmp/preview-mod.x\n')
     if (cmd === 'sh' && e.argv[2]?.includes('/images/')) {
       const sid = e.argv[4]
       const n = Number(e.argv[5])
@@ -62,13 +66,19 @@ function engine(on: On, h: Host) {
       const ready = sid === 'SID' && file && looks >= (file.after ?? 1)
       return out(0, ready ? `${file.path}\n` : '')
     }
+    if (cmd === 'sh' && e.argv[2]?.includes('pbpaste')) return out(0, h.clipboard ?? '')
     if (cmd === 'sips') h.sips.push([...e.argv])
     return out(0)
   })
-  on('fs.read', () => ({ value: { base64: BMP } }))
+  on('fs.read', () => ({ value: { base64: h.bmp ?? BMP } }))
+  // Like Claude Code, the editor folds a paste of several lines into a
+  // placeholder.
   on('prompt.edit', (_, e) => {
-    const text = e.text.slice(0, e.start) + e.inputText + e.text.slice(e.end)
-    return { text, cursor: e.start + e.inputText.length }
+    const lines = e.inputText.split('\n').length - 1
+    const n = (e.text.match(/\[Pasted text #/g)?.length ?? 0) + 1
+    const input = lines >= 2 ? `[Pasted text #${n} +${lines} lines]` : e.inputText
+    const text = e.text.slice(0, e.start) + input + e.text.slice(e.end)
+    return { text, cursor: e.start + input.length }
   })
   on('prompt.change', (_, e) => ({ text: e.text }))
 }
@@ -180,11 +190,90 @@ test('sending the prompt empties the pane', async ($, on) => {
   await ui.unmount()
 })
 
-test('/image-preview-mod opens the pane by hand', async ($, on) => {
+test('/preview-mod opens the pane by hand', async ($, on) => {
   const h = host()
   engine(on, h)
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  const ran = await $.command.run({ command: 'image-preview-mod', args: '' } as CommandRunInput)
+  const ran = await $.command.run({ command: 'preview-mod', args: '' } as CommandRunInput)
   expect(ran.text).toContain('열었습니다')
   expect(h.opened).toBe(1)
+})
+
+const PASTE = 'first line\nsecond line\nthird line\nfourth line'
+
+test('pasted text is shown from what the paste carried', async ($, on) => {
+  const h = host()
+  engine(on, h)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await prompt($).edit(paste('look: ', PASTE))
+  const ui = await pane($, ui => ui.find({ type: 'Text', text: /first line/ }))
+  expect((await ui.find({ type: 'Text', text: /\[Pasted text #1 \+3 lines\]/ }))?.text).toBeTruthy()
+  expect((await ui.find({ type: 'Text', text: /first line/ }))?.text).toBeTruthy()
+  expect(h.opened).toBe(1)
+  await ui.unmount()
+})
+
+test('a paste the editor folded before the mod saw it is read from the clipboard', async ($, on) => {
+  const h = host()
+  h.clipboard = 'copied one\ncopied two\ncopied three\ncopied four'
+  engine(on, h)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await prompt($).change({ text: '[Pasted text #1 +3 lines]', cursor: 25, origin: { kind: 'engine' } })
+  const ui = await pane($, ui => ui.find({ type: 'Text', text: /copied one/ }))
+  expect((await ui.find({ type: 'Text', text: /copied one/ }))?.text).toBeTruthy()
+  await ui.unmount()
+})
+
+test('a clipboard text that does not fit the placeholder is not shown for it', async ($, on) => {
+  const h = host()
+  h.clipboard = 'something else entirely'
+  engine(on, h)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await prompt($).change({ text: '[Pasted text #1 +30 lines]', cursor: 26, origin: { kind: 'engine' } })
+  const ui = await pane($, ui => ui.find({ type: 'Text', text: /미리보기 없음/ }))
+  expect((await ui.find({ type: 'Text', text: /미리보기 없음/ }))?.text).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /something else/ })).toBeFalsy()
+  await ui.unmount()
+})
+test('a pasted text taken out of the prompt leaves the pane', async ($, on) => {
+  engine(on, host())
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await prompt($).edit(paste('', PASTE))
+  let ui = await pane($, ui => ui.find({ type: 'Text', text: /first line/ }))
+  await ui.unmount()
+  await prompt($).change({ text: '', cursor: 0, origin: { kind: 'clear' } })
+  ui = await pane($, async ui => !(await ui.find({ type: 'Text', text: /first line/ })))
+  expect(await ui.find({ type: 'Text', text: /first line/ })).toBeFalsy()
+  await ui.unmount()
+})
+
+// A width x height 24-bit BMP of noise, as a big screenshot shrunk by sips.
+function bigBmp(width: number, height: number): string {
+  const stride = Math.ceil((width * 3) / 4) * 4
+  const data = new Uint8Array(54 + stride * height)
+  const view = new DataView(data.buffer)
+  data[0] = 0x42
+  data[1] = 0x4d
+  view.setUint32(2, data.length, true)
+  view.setUint32(10, 54, true)
+  view.setUint32(14, 40, true)
+  view.setInt32(18, width, true)
+  view.setInt32(22, -height, true)
+  view.setUint16(26, 1, true)
+  view.setUint16(28, 24, true)
+  for (let i = 54; i < data.length; i += 1) data[i] = (i * 37) & 255
+  return data.toBase64()
+}
+
+test('many big pictures all draw: one pane holds at most 2 MiB of picture data', async ($, on) => {
+  const count = 6
+  const h = host(Array.from({ length: count }, (_, i): [number, string] => [i + 1, `/tmp/claude-501/-proj/SID/images/${i + 1}.png`]))
+  h.bmp = bigBmp(480, 500)
+  engine(on, h)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const text = Array.from({ length: count }, (_, i) => `[Image #${i + 1}]`).join(' ')
+  await prompt($).change({ text, cursor: text.length, origin: { kind: 'engine' } })
+  const ui = await pane($, async ui => (await ui.find({ type: 'Image', key: `image-${count}` })) && (await ui.find({ type: 'Image', key: 'image-1' })))
+  for (let n = 1; n <= count; n += 1) expect(await ui.find({ type: 'Image', key: `image-${n}` })).toBeTruthy()
+  await ui.unmount()
 })

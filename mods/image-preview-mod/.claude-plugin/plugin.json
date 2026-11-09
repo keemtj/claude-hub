@@ -1,7 +1,0 @@
-{
-  "name": "image-preview-mod",
-  "version": "0.1.0",
-  "description": "프롬프트에 붙인 이미지([Image #N])를 옆 패널에 미리 보여 준다 (/image-preview-mod)",
-  "author": { "name": "keemtj" },
-  "types": "./types/index.d.ts"
-}

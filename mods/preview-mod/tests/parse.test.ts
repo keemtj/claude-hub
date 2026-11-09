@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import { halfBlockCells } from '../hooks/cells'
-import { decodeBmp, fitPicture, imageNumbers, newNumbers } from '../hooks/parse'
+import { decodeBmp, fitBudget, fitPicture, fitsPaste, imageNumbers, newNumbers, pastedTexts, previewLines } from '../hooks/parse'
 
 test('finds every [Image #N] in the prompt, in order, once each', async () => {
   expect(imageNumbers('look [Image #1] and [Image #3] then [Image #1]')).toEqual([1, 3])
@@ -19,11 +19,13 @@ test('tells which numbers are new since the last look', async () => {
   expect(newNumbers([], [1, 2])).toEqual([1, 2])
 })
 
-test('a picture keeps its shape within the width and rows given', async () => {
-  expect(fitPicture(640, 480, 100, 40)).toEqual({ columns: 48, rows: 18 })
-  expect(fitPicture(640, 480, 30, 40)).toEqual({ columns: 28, rows: 11 })
-  // A tall screenshot is held to the rows there are.
-  expect(fitPicture(400, 1600, 100, 20)).toEqual({ columns: 10, rows: 20 })
+test('every picture is drawn 32 columns wide, as tall as its shape needs', async () => {
+  // A cell is about twice as tall as wide: 640 x 480 at 32 columns is 12 rows.
+  expect(fitPicture(640, 480, 100)).toEqual({ columns: 32, rows: 12 })
+  // A tall screenshot keeps the width and grows down; the pane scrolls.
+  expect(fitPicture(400, 1600, 100)).toEqual({ columns: 32, rows: 64 })
+  // Only a pane narrower than that shrinks it.
+  expect(fitPicture(640, 480, 22)).toEqual({ columns: 20, rows: 8 })
 })
 
 // A BMP with the given rows of [r, g, b] pixels: 24-bit rows padded to four
@@ -85,4 +87,39 @@ test('a terminal without pictures gets half-block cells averaging the pixels', a
   // 2 wide, 2 tall: red and blue on top, white and black below, into one cell.
   const rgba = new Uint8Array([255, 0, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255, 0, 0, 0, 255])
   expect([...halfBlockCells(rgba, 2, 2, 1, 1)]).toEqual([0x2580, 0x800080, 0x808080])
+})
+
+test('finds every [Pasted text #N] with its line count when it has one', async () => {
+  expect(pastedTexts('a [Pasted text #1 +12 lines] b [Pasted text #2] [Pasted text #1 +12 lines]')).toEqual([
+    { n: 1, lines: 12 },
+    { n: 2, lines: undefined },
+  ])
+  expect(pastedTexts('[Image #1] [Pasted text#3]')).toEqual([])
+})
+
+test('a clipboard text stands for the placeholder only when its line count fits', async () => {
+  const eleven = Array.from({ length: 11 }, (_, i) => `line ${i}`).join('\n')
+  // Claude Code may count the last line or not: +10 or +11 both fit 11 lines.
+  expect(fitsPaste(eleven, 10)).toBe(true)
+  expect(fitsPaste(eleven, 11)).toBe(true)
+  expect(fitsPaste(eleven, 30)).toBe(false)
+  // A short paste is folded without a count: any text that is not empty fits.
+  expect(fitsPaste('one long line', undefined)).toBe(true)
+  expect(fitsPaste('', undefined)).toBe(false)
+})
+test('a long text shows its first lines and how many more there are', async () => {
+  const text = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join('\n')
+  expect(previewLines(text, 3)).toEqual({ shown: ['line 1', 'line 2', 'line 3'], more: 17 })
+  expect(previewLines('one\ntwo', 3)).toEqual({ shown: ['one', 'two'], more: 0 })
+})
+
+test('a picture over its share of the pane budget shrinks, keeping its shape', async () => {
+  // 320 x 240 x 4 bytes fits a 400 KB share as it is.
+  expect(fitBudget(320, 240, 400_000)).toEqual({ width: 320, height: 240 })
+  // Over a 100 KB share it shrinks to fit, the same shape.
+  const small = fitBudget(320, 240, 100_000)
+  expect(small.width * small.height * 4).toBeLessThanOrEqual(100_000)
+  expect(Math.abs(small.width / small.height - 320 / 240)).toBeLessThan(0.05)
+  // Never below one pixel.
+  expect(fitBudget(320, 240, 1)).toEqual({ width: 1, height: 1 })
 })
