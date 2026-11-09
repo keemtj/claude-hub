@@ -8,7 +8,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/Claude_Code-plugin_marketplace-D97757?style=flat-square" alt="Claude Code plugin marketplace">
-  <img src="https://img.shields.io/badge/mods-6-555?style=flat-square" alt="6 mods">
+  <img src="https://img.shields.io/badge/mods-7-555?style=flat-square" alt="7 mods">
 </p>
 
 <p align="center"><b>한국어</b> | <a href="README.en.md">English</a></p>
@@ -107,6 +107,15 @@ mod는 Claude Code 자체의 그리기 엔진으로 화면을 그리므로 모�
 - **명령:** `/gif-mod`로 열고, `/gif-mod <검색어>`로 검색하고(패널의 검색 입력란에 써도 됩니다), `/gif-mod close`로 닫습니다.
 - **선택 설정:** GIPHY API 키. `/plugin configure gif-mod@claude-hub`로 넣으면 키체인에 저장됩니다.
 - [자세히와 외부 서비스 약관](mods/gif-mod/README.md)
+
+### preview-mod
+
+<!-- preview: mods/preview-mod/media/preview.gif -->
+
+프롬프트에 붙인 것을 옆에서 미리 봅니다. `[Image #N]`으로 접힌 이미지와 `[Pasted text #N +M lines]`로 접힌 긴 글을 붙이는 순간 패널에 보여 줍니다. 붙여넣기와 Finder에서 끌어다 놓기가 모두 되고, 보내거나 지우면 목록에서 빠집니다.
+
+- **명령:** `/preview-mod`로 열고 `/preview-mod close`로 닫습니다. 무언가를 붙이면 알아서 열립니다.
+- [자세히](mods/preview-mod/README.md)
 
 ## 설치한 자산 관리
 
