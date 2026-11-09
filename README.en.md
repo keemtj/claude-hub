@@ -8,7 +8,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/Claude_Code-plugin_marketplace-D97757?style=flat-square" alt="Claude Code plugin marketplace">
-  <img src="https://img.shields.io/badge/mods-6-555?style=flat-square" alt="6 mods">
+  <img src="https://img.shields.io/badge/mods-7-555?style=flat-square" alt="7 mods">
 </p>
 
 <p align="center"><a href="README.md">한국어</a> | <b>English</b></p>
@@ -107,6 +107,15 @@ A GIF beside your work, and another one on refresh. It starts with cats; with yo
 - **Command:** `/gif-mod` opens it, `/gif-mod <search>` searches (or type in the pane's search field), `/gif-mod close` closes it.
 - **Optional setting:** a GIPHY API key, entered with `/plugin configure gif-mod@claude-hub` and kept in your keychain.
 - [Details and third-party terms](mods/gif-mod/README.en.md)
+
+### preview-mod
+
+<!-- preview: mods/preview-mod/media/preview.gif -->
+
+See what you pasted, beside the prompt. The pictures folded into `[Image #N]` and the long texts folded into `[Pasted text #N +M lines]` show up in a side pane as you paste them, whether pasted or dropped from Finder, and leave when you send or delete them.
+
+- **Command:** `/preview-mod` opens it, `/preview-mod close` closes it. It opens on its own when you paste something.
+- [Details](mods/preview-mod/README.en.md)
 
 ## Managing installed assets
 
