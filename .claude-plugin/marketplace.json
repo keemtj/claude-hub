@@ -42,6 +42,12 @@
       "source": "./mods/gif-mod",
       "description": "옆 패널에 GIF를 보여 준다. 기본은 고양이, 검색어로 다른 GIF도 찾는다 (/gif-mod)",
       "category": "mod"
+    },
+    {
+      "name": "image-preview-mod",
+      "source": "./mods/image-preview-mod",
+      "description": "프롬프트에 붙인 이미지([Image #N])를 옆 패널에 미리 보여 준다 (/image-preview-mod)",
+      "category": "mod"
     }
   ]
 }
