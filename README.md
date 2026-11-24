@@ -120,6 +120,15 @@ mod는 Claude Code 자체의 그리기 엔진으로 화면을 그리므로 모�
 - **명령:** `/preview-mod`로 열고 `/preview-mod close`로 닫습니다. 무언가를 붙이면 알아서 열립니다.
 - [자세히](mods/preview-mod/README.md)
 
+### todo-mod
+
+<!-- preview: mods/todo-mod/media/preview.gif -->
+
+저장소마다 할 일 목록을 두고 옆 패널에 보여 줍니다. 목록은 세션이 바뀌어도 그 저장소에 남습니다. Claude가 일하는 도중에 다른 요청을 보내면 하던 일과 새 요청을 목록에 올리고, 끝나지 않은 항목은 프롬프트마다 Claude에게 다시 알려 줍니다.
+
+- **명령:** `/todo-mod`로 열고, `/todo-mod <내용>`으로 추가하고, `/todo-mod done|start|rm <번호>`와 `/todo-mod clear`로 정리합니다.
+- [자세히](mods/todo-mod/README.md)
+
 ## Hook, Skill, MCP, Agent, Plugin
 
 아직 없습니다. 만드는 방법은 폴더마다 있습니다: [hooks](hooks/README.md), [skills](skills/README.md), [mcp](mcp/README.md), [agents](agents/README.md), [plugins](plugins/README.md).
