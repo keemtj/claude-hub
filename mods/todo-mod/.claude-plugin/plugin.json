@@ -1,0 +1,9 @@
+{
+  "name": "todo-mod",
+  "version": "0.1.0",
+  "description": "저장소(git 루트)별 할 일 목록을 옆 패널에 보여 주고, 작업 중 새 요청이 들어와도 원래 작업을 잃지 않게 한다 (/todo-mod)",
+  "author": {
+    "name": "keemtj"
+  },
+  "types": "./types/index.d.ts"
+}

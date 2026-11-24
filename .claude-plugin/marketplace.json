@@ -48,6 +48,12 @@
       "source": "./mods/preview-mod",
       "description": "프롬프트에 붙인 이미지와 긴 글을 옆 패널에 미리 보여 준다 (/preview-mod)",
       "category": "mod"
+    },
+    {
+      "name": "todo-mod",
+      "source": "./mods/todo-mod",
+      "description": "저장소(git 루트)별 할 일 목록을 옆 패널에 보여 주고, 작업 중 새 요청이 들어와도 원래 작업을 잃지 않게 한다 (/todo-mod)",
+      "category": "mod"
     }
   ]
 }

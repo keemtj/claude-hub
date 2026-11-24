@@ -120,6 +120,15 @@ See what you pasted, beside the prompt. The pictures folded into `[Image #N]` an
 - **Command:** `/preview-mod` opens it, `/preview-mod close` closes it. It opens on its own when you paste something.
 - [Details](mods/preview-mod/README.en.md)
 
+### todo-mod
+
+<!-- preview: mods/todo-mod/media/preview.gif -->
+
+Keeps a to-do list per repository in a side pane; the list stays with the repository across sessions. When you send a request while Claude is working, the running task and the new request are added, and open items are passed back to Claude with every prompt.
+
+- **Command:** `/todo-mod` opens it, `/todo-mod <text>` adds an item, `/todo-mod done|start|rm <n>` and `/todo-mod clear` tidy up.
+- [Details](mods/todo-mod/README.en.md)
+
 ## Hooks, skills, MCP, agents, plugins
 
 None yet. Each folder says how to make one: [hooks](hooks/README.en.md), [skills](skills/README.en.md), [mcp](mcp/README.en.md), [agents](agents/README.en.md), [plugins](plugins/README.en.md).
